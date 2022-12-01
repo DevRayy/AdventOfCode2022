@@ -19,8 +19,8 @@ fn main() {
 fn part1(input: &str) -> i32 {
     input.split("\n\n")
         .into_iter()
-        .map(|elve| {
-            elve.split("\n")
+        .map(|elf| {
+            elf.split("\n")
                 .into_iter()
                 .map(|cal| cal.parse::<i32>().unwrap())
                 .sum::<i32>()
@@ -32,8 +32,8 @@ fn part1(input: &str) -> i32 {
 fn part2(input: &str) -> i32 {
     let mut elves: Vec<i32> = input.split("\n\n")
         .into_iter()
-        .map(|elve| {
-            elve.split("\n")
+        .map(|elf| {
+            elf.split("\n")
                 .into_iter()
                 .map(|cal| cal.parse::<i32>().unwrap())
                 .sum::<i32>()
