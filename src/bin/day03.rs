@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::{BinaryHeap, HashSet};
 use std::fs;
 use std::time::Instant;
 
@@ -24,20 +24,15 @@ fn part1(input: &str) -> i32 {
         .into_iter()
         .map(|x| {
             let halflen = x.len()/2;
-            let comp1 = x.chars()
+            let mut comp1 = x.chars()
                 .take(halflen)
-                .collect::<HashSet<char>>();
+                .collect::<Vec<char>>();
             let comp2 = x.chars()
                 .rev()
                 .take(halflen)
-                .collect::<HashSet<char>>();
-            (comp1, comp2)
-        })
-        .map(|(comp1, comp2)| {
-            comp1.intersection(&comp2)
-                .nth(0)
-                .unwrap()
-                .clone()
+                .collect::<Vec<char>>();
+            comp1.retain(|e| comp2.contains(e));
+            comp1.iter().nth(0).unwrap().clone()
         })
         .map(|c| {
             if c.is_ascii_uppercase() {
@@ -54,15 +49,11 @@ fn part2(input: &str) -> i32 {
         .into_iter()
         .tuples()
         .map(|(elf1, elf2, elf3)| {
-            let ruck1 = elf1.chars().collect::<HashSet<char>>();
-            let ruck2 = elf2.chars().collect::<HashSet<char>>();
-            let ruck3 = elf3.chars().collect::<HashSet<char>>();
-            (ruck1, ruck2, ruck3)
-        })
-        .map(|(ruck1, ruck2, ruck3)| {
-            let mut base = ruck1.clone();
-            base.retain(|e| ruck2.contains(e) && ruck3.contains(e));
-            base.iter().nth(0).unwrap().clone()
+            let mut ruck1 = elf1.chars().collect::<Vec<char>>();
+            let ruck2 = elf2.chars().collect::<Vec<char>>();
+            let ruck3 = elf3.chars().collect::<Vec<char>>();
+            ruck1.retain(|e| ruck2.contains(e) && ruck3.contains(e));
+            ruck1.iter().nth(0).unwrap().clone()
         })
         .map(|c| {
             if c.is_ascii_uppercase() {
