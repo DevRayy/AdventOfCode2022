@@ -21,21 +21,28 @@ fn part1(input: &str) -> i32 {
     input.split("\n")
         .into_iter()
         .map(|x| {
+            let halflen = x.len()/2;
             let comp1 = x.chars()
-                .take(x.len()/2)
+                .take(halflen)
                 .collect::<HashSet<char>>();
             let comp2 = x.chars()
                 .rev()
-                .take(x.len()/2)
+                .take(halflen)
                 .collect::<HashSet<char>>();
-            let item = comp1.intersection(&comp2)
+            (comp1, comp2)
+        })
+        .map(|(comp1, comp2)| {
+            comp1.intersection(&comp2)
                 .nth(0)
-                .unwrap();
-
-            if item.is_ascii_uppercase() {
-                (*item as i8 - 38) as i32
+                .unwrap()
+                .clone()
+        })
+        .map(|c| {
+            if c.is_ascii_uppercase() {
+                c as i32 - 38
             } else {
-                (*item as i8 - 96) as i32
+                c as i32 - 96
             }
-        }).sum::<i32>()
+        })
+        .sum::<i32>()
 }
