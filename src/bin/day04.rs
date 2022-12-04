@@ -23,8 +23,7 @@ fn part1(input: &str) -> i32 {
     input.split("\n")
         .into_iter()
         .map(|x| {
-            x.replace("-", ",")
-                .split(",")
+            x.split(|c| c == ',' || c == '-')
                 .map(|y| y.parse::<i32>().unwrap())
                 .collect::<Vec<i32>>()
         })
@@ -39,8 +38,7 @@ fn part2(input: &str) -> i32 {
     input.split("\n")
         .into_iter()
         .map(|x| {
-            x.replace("-", ",")
-                .split(",")
+            x.split(|c| c == ',' || c == '-')
                 .map(|y| y.parse::<i32>().unwrap())
                 .collect::<Vec<i32>>()
         })
