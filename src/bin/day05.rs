@@ -28,10 +28,10 @@ fn part1(input: &str) -> String {
     let mut towers = parse_towers(splitted.clone().nth(0).unwrap());
     let moves = parse_moves(splitted.clone().nth(1).unwrap());
 
-    for m in moves {
-        for _ in 0..m.quantity {
-            let c = towers[m.from-1].pop().unwrap();
-            towers[m.to-1].push(c);
+    for (quantity, from, to) in moves {
+        for _ in 0..quantity {
+            let c = towers[from-1].pop().unwrap();
+            towers[to-1].push(c);
         }
     }
 
@@ -45,16 +45,16 @@ fn part2(input: &str) -> String {
     let mut towers = parse_towers(splitted.clone().nth(0).unwrap());
     let moves = parse_moves(splitted.clone().nth(1).unwrap());
 
-    for m in moves {
+    for (quantity, from, to) in moves {
         let mut crane: Vec<char> = Vec::new();
 
-        for _ in 0..m.quantity {
-            let c = towers[m.from-1].pop().unwrap();
+        for _ in 0..quantity {
+            let c = towers[from-1].pop().unwrap();
             crane.push(c);
         }
 
         for c in crane.iter().rev() {
-            towers[m.to-1].push(*c)
+            towers[to-1].push(*c)
         }
     }
 
@@ -93,16 +93,15 @@ fn parse_towers(input: &str) -> Vec<Vec<char>> {
     towers
 }
 
-fn parse_moves(input: &str) -> Vec<CrateMove> {
-    let re = Regex::new(r"move (\d+) from (\d+) to (\d+)").unwrap();
+fn parse_moves(input: &str) -> Vec<(usize, usize, usize)> {
     input.split("\n")
         .map(|line| {
-            let caps = re.captures(line).unwrap();
-            CrateMove {
-                quantity: caps.get(1).unwrap().as_str().parse::<usize>().unwrap(),
-                from: caps.get(2).unwrap().as_str().parse::<usize>().unwrap(),
-                to: caps.get(3).unwrap().as_str().parse::<usize>().unwrap()
-            }
+            let mut splitted = line.split(" ");
+            (
+                splitted.nth(1).unwrap().parse::<usize>().unwrap(),
+                splitted.nth(1).unwrap().parse::<usize>().unwrap(),
+                splitted.nth(1).unwrap().parse::<usize>().unwrap(),
+            )
         })
         .collect()
 }
