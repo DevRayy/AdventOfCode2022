@@ -1,8 +1,5 @@
-use std::collections::{BinaryHeap, HashSet};
 use std::fs;
 use std::time::Instant;
-
-use itertools::*;
 
 fn main() {
     let input = fs::read_to_string("data/day04.txt")

@@ -17,12 +17,6 @@ fn main() {
     println!("Part 2 ans: {:?}", part2_ans);
 }
 
-struct CrateMove {
-    quantity: usize,
-    from: usize,
-    to: usize,
-}
-
 fn part1(input: &str) -> String {
     let splitted = input.split("\n\n");
     let mut towers = parse_towers(splitted.clone().nth(0).unwrap());
