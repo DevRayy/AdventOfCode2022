@@ -1,11 +1,9 @@
-use std::collections::{BinaryHeap, HashSet};
 use std::fs;
 use std::time::Instant;
-
-use itertools::*;
+use regex::Regex;
 
 fn main() {
-    let input = fs::read_to_string("data/day04.txt")
+    let input = fs::read_to_string("data/day05.txt")
         .expect("Unable to load input file");
 
     let part1_start = Instant::now();
@@ -19,31 +17,92 @@ fn main() {
     println!("Part 2 ans: {:?}", part2_ans);
 }
 
-fn part1(input: &str) -> i32 {
-    input.split("\n")
-        .into_iter()
-        .map(|x| {
-            x.split(|c| c == ',' || c == '-')
-                .map(|y| y.parse::<i32>().unwrap())
-                .collect::<Vec<i32>>()
-        })
-        .filter(|x| {
-            (x[0] >= x[2] && x[1] <= x[3]) ||
-                (x[2] >= x[0] && x[3] <= x[1])
-        })
-        .count() as i32
+struct CrateMove {
+    quantity: usize,
+    from: usize,
+    to: usize,
 }
 
-fn part2(input: &str) -> i32 {
+fn part1(input: &str) -> String {
+    let splitted = input.split("\n\n");
+    let mut towers = parse_towers(splitted.clone().nth(0).unwrap());
+    let moves = parse_moves(splitted.clone().nth(1).unwrap());
+
+    for m in moves {
+        for _ in 0..m.quantity {
+            let c = towers[m.from-1].pop().unwrap();
+            towers[m.to-1].push(c);
+        }
+    }
+
+    towers.iter()
+        .map(|t| t.last().unwrap())
+        .collect::<String>()
+}
+
+fn part2(input: &str) -> String {
+    let splitted = input.split("\n\n");
+    let mut towers = parse_towers(splitted.clone().nth(0).unwrap());
+    let moves = parse_moves(splitted.clone().nth(1).unwrap());
+
+    for m in moves {
+        let mut crane: Vec<char> = Vec::new();
+
+        for _ in 0..m.quantity {
+            let c = towers[m.from-1].pop().unwrap();
+            crane.push(c);
+        }
+
+        for c in crane.iter().rev() {
+            towers[m.to-1].push(*c)
+        }
+    }
+
+    towers.iter()
+        .map(|t| t.last().unwrap())
+        .collect::<String>()
+}
+
+fn parse_towers(input: &str) -> Vec<Vec<char>> {
+    let mut lines = input.split("\n")
+        .collect::<Vec<&str>>();
+    let tower_count = lines.pop()
+        .unwrap()
+        .split(" ")
+        .last()
+        .unwrap()
+        .parse::<usize>()
+        .unwrap();
+
+    let mut towers: Vec<Vec<char>> = Vec::new();
+    for i in 0..tower_count {
+        let mut tower: Vec<char> = Vec::new();
+        for line in lines.iter().rev() {
+            match line.chars().nth(i*4 + 1) {
+                None => continue,
+                Some(c) => {
+                    if !c.is_whitespace() {
+                        tower.push(c);
+                    }
+                }
+            }
+        }
+        towers.push(tower);
+    }
+
+    towers
+}
+
+fn parse_moves(input: &str) -> Vec<CrateMove> {
+    let re = Regex::new(r"move (\d+) from (\d+) to (\d+)").unwrap();
     input.split("\n")
-        .into_iter()
-        .map(|x| {
-            x.split(|c| c == ',' || c == '-')
-                .map(|y| y.parse::<i32>().unwrap())
-                .collect::<Vec<i32>>()
+        .map(|line| {
+            let caps = re.captures(line).unwrap();
+            CrateMove {
+                quantity: caps.get(1).unwrap().as_str().parse::<usize>().unwrap(),
+                from: caps.get(2).unwrap().as_str().parse::<usize>().unwrap(),
+                to: caps.get(3).unwrap().as_str().parse::<usize>().unwrap()
+            }
         })
-        .filter(|x| {
-            !(x[1] < x[2] || x[0] > x[3])
-        })
-        .count() as i32
+        .collect()
 }
