@@ -1,7 +1,5 @@
-use std::collections::HashSet;
 use std::fs;
 use std::time::Instant;
-use itertools::*;
 
 fn main() {
     let input = fs::read_to_string("data/day06.txt")
@@ -22,7 +20,7 @@ fn part1(input: &str) -> usize {
     let chars = input.chars().collect::<Vec<char>>();
     chars.windows(4)
         .position(|chars| {
-            chars.iter().collect::<HashSet<&char>>().len() == chars.len()
+            !(1..chars.len()).any(|i| chars[i..].contains(&chars[i - 1]))
         }).unwrap() + 4
 }
 
@@ -30,6 +28,6 @@ fn part2(input: &str) -> usize {
     let chars = input.chars().collect::<Vec<char>>();
     chars.windows(14)
         .position(|chars| {
-            chars.iter().collect::<HashSet<&char>>().len() == chars.len()
+            !(1..chars.len()).any(|i| chars[i..].contains(&chars[i - 1]))
         }).unwrap() + 14
 }
