@@ -12,10 +12,10 @@ fn main() {
     println!("Part 1 time: {:.2?}", part1_start.elapsed());
     println!("Part 1 ans: {:?}", part1_ans);
 
-    // let part2_start = Instant::now();
-    // let part2_ans = part2(&input);
-    // println!("Part 2 time: {:.2?}", part2_start.elapsed());
-    // println!("Part 2 ans: {:?}", part2_ans);
+    let part2_start = Instant::now();
+    let part2_ans = part2(&input);
+    println!("Part 2 time: {:.2?}", part2_start.elapsed());
+    println!("Part 2 ans: {:?}", part2_ans);
 }
 
 fn part1(input: &str) -> usize {
@@ -24,7 +24,12 @@ fn part1(input: &str) -> usize {
         .position(|chars| {
             chars.iter().collect::<HashSet<&char>>().len() == chars.len()
         }).unwrap() + 4
+}
 
-
-
+fn part2(input: &str) -> usize {
+    let chars = input.chars().collect::<Vec<char>>();
+    chars.windows(14)
+        .position(|chars| {
+            chars.iter().collect::<HashSet<&char>>().len() == chars.len()
+        }).unwrap() + 14
 }
