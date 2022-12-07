@@ -12,13 +12,34 @@ fn main() {
     println!("Part 1 time: {:.2?}", part1_start.elapsed());
     println!("Part 1 ans: {:?}", part1_ans);
 
-    // let part2_start = Instant::now();
-    // let part2_ans = part2(&input);
-    // println!("Part 2 time: {:.2?}", part2_start.elapsed());
-    // println!("Part 2 ans: {:?}", part2_ans);
+    let part2_start = Instant::now();
+    let part2_ans = part2(&input);
+    println!("Part 2 time: {:.2?}", part2_start.elapsed());
+    println!("Part 2 ans: {:?}", part2_ans);
 }
 
 fn part1(input: &str) -> usize {
+    let dir = parse(input);
+    dir.iter()
+        .filter(|(_, &v)| v <= 100000)
+        .map(|(_, &v)| v)
+        .sum::<usize>()
+}
+
+fn part2(input: &str) -> usize {
+    let dir = parse(input);
+
+    let free = 70000000 - dir.get("").unwrap();
+    let needed = 30000000 - free;
+
+    dir.iter()
+        .filter(|(_, &v)| v >= needed)
+        .map(|(_, &v)| v)
+        .min()
+        .unwrap()
+}
+
+fn parse(input: &str) -> HashMap<String, usize> {
     let mut dir: HashMap<String, usize> = HashMap::new();
     let mut current_path: Vec<&str> = Vec::new();
 
@@ -29,14 +50,14 @@ fn part1(input: &str) -> usize {
             "cd" => {
                 match splitted.next().unwrap() {
                     "/" => current_path = Vec::new(),
-                    ".." => {current_path.pop();},
+                    ".." => { current_path.pop(); },
                     d => current_path.push(d)
                 };
             },
             "ls" => {},
             "dir" => {},
             filesize => {
-                for i in 0..current_path.len()+1 {
+                for i in 0..current_path.len() + 1 {
                     let path = current_path[..i].iter().join("/");
                     let count = dir.entry(path).or_insert(0);
                     *count += filesize.parse::<usize>().unwrap();
@@ -44,8 +65,5 @@ fn part1(input: &str) -> usize {
             },
         }
     };
-    dir.iter()
-        .filter(|(_, &v)| v <= 100000)
-        .map(|(_, &v)| v)
-        .sum::<usize>()
+    dir
 }
