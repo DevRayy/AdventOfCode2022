@@ -11,13 +11,11 @@ fn main() {
     let part1_ans = part1(&input);
     println!("Part 1 time: {:.2?}", part1_start.elapsed());
     println!("Part 1 ans: {}", part1_ans);
-    assert_eq!(part1_ans, 1798);
 
     let part2_start = Instant::now();
     let part2_ans = part2(&input);
     println!("Part 2 time: {:.2?}", part2_start.elapsed());
     println!("Part 2 ans: {:?}", part2_ans);
-    assert_eq!(part2_ans, 259308);
 }
 
 fn parse(input: &str) -> Vec<Vec<u8>> {
@@ -49,6 +47,10 @@ fn part1(input: &str) -> usize {
 }
 
 fn is_visible(forest: &Vec<Vec<u8>>, x: usize, y: usize) -> bool {
+    if x == 0 || x == forest.len() || y == 0 || y == forest[0].len() {
+        return true
+    }
+
     let tree = forest[x][y];
 
     (x+1..forest.len()) //down
@@ -70,7 +72,7 @@ fn part2(input: &str) -> i32 {
             row.iter()
                 .enumerate()
                 .map(|(j, tree)| {
-                    score(&forest, i, j)
+                    scenic_score(&forest, i, j)
                 }).max()
                 .unwrap()
         })
@@ -78,40 +80,40 @@ fn part2(input: &str) -> i32 {
         .unwrap()
 }
 
-fn score(forest: &Vec<Vec<u8>>, x: usize, y: usize) -> i32 {
+fn scenic_score(forest: &Vec<Vec<u8>>, x: usize, y: usize) -> i32 {
     if x == 0 || x == forest.len() || y == 0 || y == forest[0].len() {
         return 0
     }
 
-    let center = forest[x][y];
+    let tree = forest[x][y];
 
-    let score1 = match (x+1..forest.len())
-        .position(|i| forest[i][y] >= center)
+    let score_down = match (x+1..forest.len())
+        .position(|i| forest[i][y] >= tree)
     {
         None => forest.len() - (x + 1),
         Some(pos) => pos + 1
     } as i32;
 
-    let score2 = match (0..x).rev()
-        .position(|i| forest[i][y] >= center)
+    let score_up = match (0..x).rev()
+        .position(|i| forest[i][y] >= tree)
     {
         None => x,
         Some(pos) => pos + 1
     } as i32;
 
-    let score3 = match (y+1..forest[x].len())
-        .position(|i| forest[x][i] >= center)
+    let score_right = match (y+1..forest[x].len())
+        .position(|i| forest[x][i] >= tree)
     {
         None => forest[x].len() - (y + 1),
         Some(pos) => pos + 1
     } as i32;
 
-    let score4 = match (0..y).rev()
-        .position(|i| forest[x][i] >= center)
+    let score_left = match (0..y).rev()
+        .position(|i| forest[x][i] >= tree)
     {
         None => y,
         Some(pos) => pos + 1
     } as i32;
 
-    score1 * score2 * score3 * score4
+    score_down * score_up * score_right * score_left
 }
