@@ -33,44 +33,44 @@ fn parse(input: &str) -> Vec<Vec<u8>> {
 }
 
 fn part1(input: &str) -> usize {
-    let trees = parse(input);
+    let forest = parse(input);
 
-    trees.iter()
+    forest.iter()
         .enumerate()
         .map(|(i, row)| {
             row.iter()
                 .enumerate()
                 .filter(|&(j, tree)| {
-                    is_visible(&trees, i, j)
+                    is_visible(&forest, i, j)
                 })
                 .count()
         })
         .sum::<usize>()
 }
 
-fn is_visible(trees: &Vec<Vec<u8>>, x: usize, y: usize) -> bool {
-    let tree = trees[x][y];
+fn is_visible(forest: &Vec<Vec<u8>>, x: usize, y: usize) -> bool {
+    let tree = forest[x][y];
 
-    (x+1..trees.len()) //down
-        .find(|&i| trees[i][y] >= tree) == None ||
+    (x+1..forest.len()) //down
+        .find(|&i| forest[i][y] >= tree) == None ||
     ((0..x).rev() //up
-        .find(|&i| trees[i][y] >= tree) == None) ||
-    ((y + 1..trees[x].len()) //right
-        .find(|&i| trees[x][i] >= tree) == None) ||
+        .find(|&i| forest[i][y] >= tree) == None) ||
+    ((y + 1..forest[x].len()) //right
+        .find(|&i| forest[x][i] >= tree) == None) ||
     ((0..y).rev() //left
-        .find(|&i| trees[x][i] >= tree) == None)
+        .find(|&i| forest[x][i] >= tree) == None)
 }
 
 fn part2(input: &str) -> i32 {
-    let trees = parse(input);
+    let forest = parse(input);
 
-    trees.iter()
+    forest.iter()
         .enumerate()
         .map(|(i, row)| {
             row.iter()
                 .enumerate()
                 .map(|(j, tree)| {
-                    score(&trees, i, j)
+                    score(&forest, i, j)
                 }).max()
                 .unwrap()
         })
@@ -78,42 +78,38 @@ fn part2(input: &str) -> i32 {
         .unwrap()
 }
 
-fn score(trees: &Vec<Vec<u8>>, x: usize, y: usize) -> i32 {
-    let center = trees[x][y];
-
-    //DOWN
-    let mut score1: i32 = 0;
-    for i in x+1..trees.len() {
-        let tree = trees[i][y];
-        if tree < center {
-            score1 += 1;
-        } else if tree == center {
-            score1 += 1;
-            break
-        } else {
-            break
-        }
+fn score(forest: &Vec<Vec<u8>>, x: usize, y: usize) -> i32 {
+    if x == 0 || x == forest.len() || y == 0 || y == forest[0].len() {
+        return 0
     }
 
-    //UP
-    let mut score2: i32 = 0;
-    for i in (0..x).rev() {
-        let tree = trees[i][y];
-        if tree < center {
-            score2 += 1;
-        } else if tree == center {
-            score2 += 1;
-            break
-        } else {
-            break
-        }
-    }
+    let center = forest[x][y];
+
+    let score1 = match (x+1..forest.len())
+        .position(|i| forest[i][y] >= center)
+    {
+        None => (x+1..forest.len()).count(),
+        Some(pos) => (pos - x+1)
+    } as i32;
+
+    let score2 = match (0..x).rev()
+        .position(|i| forest[i][y] >= center)
+    {
+        None => (0..x).count(),
+        Some(pos) => pos + 1
+    } as i32;
+
+    // let score3 = match (y+1..forest[x].len())
+    //     .position(|i| forest[x][i] >= center)
+    // {
+    //     None => (y+1..forest[x].len()).count(),
+    //     Some(pos) => pos - y + 1
+    // } as i32;
 
     //RIGHT
     let mut score3: i32 = 0;
-    for j in y+1..trees[x].len() {
-        let tree = trees[x][j];
-        // println!("tree {} {} {}", x, j, tree);
+    for j in y+1..forest[x].len() {
+        let tree = forest[x][j];
         if tree < center {
             score3 += 1;
         } else if tree >= center {
@@ -124,19 +120,12 @@ fn score(trees: &Vec<Vec<u8>>, x: usize, y: usize) -> i32 {
         }
     }
 
-    //LEFT
-    let mut score4: i32 = 0;
-    for j in (0..y).rev() {
-        let tree = trees[x][j];
-        if tree < center {
-            score4 += 1;
-        } else if tree == center {
-            score4 += 1;
-            break
-        } else {
-            break
-        }
-    }
+    let score4 = match (0..y).rev()
+        .position(|i| forest[x][i] >= center)
+    {
+        None => (0..y).count(),
+        Some(pos) => pos + 1
+    } as i32;
 
     score1 * score2 * score3 * score4
 }
