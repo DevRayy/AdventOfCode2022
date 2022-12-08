@@ -88,42 +88,28 @@ fn score(forest: &Vec<Vec<u8>>, x: usize, y: usize) -> i32 {
     let score1 = match (x+1..forest.len())
         .position(|i| forest[i][y] >= center)
     {
-        None => (x+1..forest.len()).count(),
-        Some(pos) => (pos - x+1)
+        None => forest.len() - (x + 1),
+        Some(pos) => pos + 1
     } as i32;
 
     let score2 = match (0..x).rev()
         .position(|i| forest[i][y] >= center)
     {
-        None => (0..x).count(),
+        None => x,
         Some(pos) => pos + 1
     } as i32;
 
-    // let score3 = match (y+1..forest[x].len())
-    //     .position(|i| forest[x][i] >= center)
-    // {
-    //     None => (y+1..forest[x].len()).count(),
-    //     Some(pos) => pos - y + 1
-    // } as i32;
-
-    //RIGHT
-    let mut score3: i32 = 0;
-    for j in y+1..forest[x].len() {
-        let tree = forest[x][j];
-        if tree < center {
-            score3 += 1;
-        } else if tree >= center {
-            score3 += 1;
-            break
-        } else {
-            break
-        }
-    }
+    let score3 = match (y+1..forest[x].len())
+        .position(|i| forest[x][i] >= center)
+    {
+        None => forest[x].len() - (y + 1),
+        Some(pos) => pos + 1
+    } as i32;
 
     let score4 = match (0..y).rev()
         .position(|i| forest[x][i] >= center)
     {
-        None => (0..y).count(),
+        None => y,
         Some(pos) => pos + 1
     } as i32;
 
