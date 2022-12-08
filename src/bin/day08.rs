@@ -11,94 +11,17 @@ fn main() {
     let part1_ans = part1(&input);
     println!("Part 1 time: {:.2?}", part1_start.elapsed());
     println!("Part 1 ans: {}", part1_ans);
+    assert_eq!(part1_ans, 1798);
 
     let part2_start = Instant::now();
     let part2_ans = part2(&input);
     println!("Part 2 time: {:.2?}", part2_start.elapsed());
     println!("Part 2 ans: {:?}", part2_ans);
+    assert_eq!(part2_ans, 259308);
 }
 
-fn part1(input: &str) -> usize {
-    let trees = input.split("\n")
-        .map(|line| {
-            line.chars()
-                .map(|c| {
-                    c.to_digit(10).unwrap() as i8
-                })
-                .collect::<Vec<i8>>()
-        })
-        .collect::<Vec<Vec<i8>>>();
-
-    let mut visible: Vec<(usize, usize)> = Vec::new();
-
-    for i in 0..trees.len() {
-        let mut max: i8 = -1;
-        for j in 0..trees[0].len() {
-            if trees[i][j] > max {
-                max = trees[i][j];
-                visible.push((i, j));
-            }
-            if max == 9 {
-                break
-            }
-        }
-
-        let mut max: i8 = -1;
-        for j in (0..trees[0].len()).rev() {
-            if trees[i][j] > max {
-                max = trees[i][j];
-                visible.push((i, j));
-            }
-            if max == 9 {
-                break
-            }
-        }
-    }
-
-    for i in 0..trees.len() {
-        let mut max: i8 = -1;
-        for j in (0..trees[0].len()).rev() {
-            if trees[i][j] > max {
-                max = trees[i][j];
-                visible.push((i, j));
-            }
-            if max == 9 {
-                break
-            }
-        }
-    }
-
-    for j in 0..trees.len() {
-    let mut max: i8 = -1;
-        for i in 0..trees[0].len() {
-            if trees[i][j] > max {
-                max = trees[i][j];
-                visible.push((i, j));
-            }
-            if max == 9 {
-                break
-            }
-        }
-    }
-
-    for j in 0..trees.len() {
-    let mut max: i8 = -1;
-        for i in (0..trees[0].len()).rev() {
-            if trees[i][j] > max {
-                max = trees[i][j];
-                visible.push((i, j));
-            }
-            if max == 9 {
-                break
-            }
-        }
-    }
-
-    visible.iter().collect::<HashSet<&(usize, usize)>>().len()
-}
-
-fn part2(input: &str) -> i32 {
-    let trees = input.split("\n")
+fn parse(input: &str) -> Vec<Vec<u8>> {
+    input.split("\n")
         .map(|line| {
             line.chars()
                 .map(|c| {
@@ -106,7 +29,40 @@ fn part2(input: &str) -> i32 {
                 })
                 .collect::<Vec<u8>>()
         })
-        .collect::<Vec<Vec<u8>>>();
+        .collect::<Vec<Vec<u8>>>()
+}
+
+fn part1(input: &str) -> usize {
+    let trees = parse(input);
+
+    trees.iter()
+        .enumerate()
+        .map(|(i, row)| {
+            row.iter()
+                .enumerate()
+                .filter(|&(j, tree)| {
+                    is_visible(&trees, i, j)
+                })
+                .count()
+        })
+        .sum::<usize>()
+}
+
+fn is_visible(trees: &Vec<Vec<u8>>, x: usize, y: usize) -> bool {
+    let tree = trees[x][y];
+
+    (x+1..trees.len()) //down
+        .find(|&i| trees[i][y] >= tree) == None ||
+    ((0..x).rev() //up
+        .find(|&i| trees[i][y] >= tree) == None) ||
+    ((y + 1..trees[x].len()) //right
+        .find(|&i| trees[x][i] >= tree) == None) ||
+    ((0..y).rev() //left
+        .find(|&i| trees[x][i] >= tree) == None)
+}
+
+fn part2(input: &str) -> i32 {
+    let trees = parse(input);
 
     trees.iter()
         .enumerate()
