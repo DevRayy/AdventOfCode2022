@@ -11,10 +11,10 @@ fn main() {
     println!("Part 1 time: {:.2?}", part1_start.elapsed());
     println!("Part 1 ans: {}", part1_ans);
 
-    // let part2_start = Instant::now();
-    // let part2_ans = part2(&input);
-    // println!("Part 2 time: {:.2?}", part2_start.elapsed());
-    // println!("Part 2 ans: {:?}", part2_ans);
+    let part2_start = Instant::now();
+    let part2_ans = part2(&input);
+    println!("Part 2 time: {:.2?}", part2_start.elapsed());
+    println!("Part 2 ans: {:?}", part2_ans);
 }
 
 fn parse(input: &str) -> Vec<(char, usize)> {
@@ -43,6 +43,28 @@ fn part1(input: &str) -> usize {
     trail.iter().collect::<HashSet<_>>().len()
 }
 
+fn part2(input: &str) -> usize {
+    let instructions = parse(input);
+    let mut rope: [(i32, i32); 10] = [(0, 0); 10];
+
+    let mut trail: Vec<(i32, i32)> = Vec::new();
+
+    for (dir, count) in instructions {
+        for _ in 0..count {
+            move_head(&mut rope[0], dir);
+
+            for i in 1..rope.len() {
+                let head = rope[i-1];
+                move_tail(&mut rope[i], &head);
+            }
+
+            trail.push(rope.last().unwrap().clone());
+        }
+    }
+
+    trail.iter().collect::<HashSet<_>>().len()
+}
+
 fn move_head(head: &mut (i32, i32), dir: char) {
     match dir {
         'R' => head.0 += 1,
@@ -59,7 +81,7 @@ fn move_tail(tail: &mut (i32, i32), head: &(i32, i32)) {
     if diff.0 == 0 || diff.1 == 0 && (diff.0.abs() + diff.1.abs() == 2){ //move directly
         tail.0 += diff.0/2;
         tail.1 += diff.1/2;
-    } else if diff.0.abs() + diff.1.abs() == 3 { //move diagonally
+    } else if diff.0.abs() + diff.1.abs() > 2 { //move diagonally
         tail.0 += diff.0.signum();
         tail.1 += diff.1.signum();
     }
