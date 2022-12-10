@@ -11,9 +11,9 @@ fn main() {
     println!("Part 1 time: {:.2?}", part1_start.elapsed());
     println!("Part 1 ans: {}", part1_ans);
 
-    // let part2_start = Instant::now();
-    // part2(&input);
-    // println!("Part 2 time: {:.2?}", part2_start.elapsed());
+    let part2_start = Instant::now();
+    part2(&input);
+    println!("Part 2 time: {:.2?}", part2_start.elapsed());
 }
 
 fn parse(input: &str) -> Vec<i32> {
@@ -47,11 +47,20 @@ fn part1(input: &str) -> i32 {
 }
 
 fn part2(input: &str) {
-    let mut instructions = parse(input);
-    instructions.iter_mut().fold(0, |acc, x| {
-        *x += acc;
-        *x
-    });
-
-
+    parse(input).iter()
+        .scan(0, |acc, &x| {
+            *acc += x;
+            Some(*acc)
+        })
+        .enumerate()
+        .map(|(i, x)| {
+            ((i as i32 % 40) - x).abs() <= 1
+        })
+        .enumerate()
+        .for_each(|(i, x)| {
+             print!("{}", if x {'#'} else {' '});
+             if (i+1) % 40 == 0 {
+                 print!("\n");
+             }
+         });
 }
