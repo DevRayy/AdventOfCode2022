@@ -11,10 +11,10 @@ fn main() {
     println!("Part 1 time: {:.2?}", part1_start.elapsed());
     println!("Part 1 ans : {}", part1_ans);
 
-    // let part2_start = Instant::now();
-    // let part2_ans = part2(&input);
-    // println!("Part 2 time: {:.2?}", part2_start.elapsed());
-    // println!("Part 2 ans : {:.2?}", part2_ans);
+    let part2_start = Instant::now();
+    let part2_ans = part2(&input);
+    println!("Part 2 time: {:.2?}", part2_start.elapsed());
+    println!("Part 2 ans : {:.2?}", part2_ans);
 }
 
 fn parse(input: &str) -> (HashMap<(i32, i32), i32>, (i32, i32), (i32, i32)) {
@@ -54,15 +54,44 @@ fn part1(input: &str) -> i32 {
 
         for dir in dirs {
             let w = (o.0 + dir.0, o.1 + dir.1);
-            match grid.get(&w) {
-                None => {continue}
-                Some(n) => {
-                    if !scores.contains_key(&w) && grid.get(&o).unwrap() + 1 >= *n {
-                        to_visit.push_front(w);
-                        scores.insert(w, scores.get(&o).unwrap() + 1);
+            if let Some(n) = grid.get(&w) {
+                if !scores.contains_key(&w) && *grid.get(&o).unwrap() >= n - 1 {
+                    to_visit.push_front(w);
+                    scores.insert(w, scores.get(&o).unwrap() + 1);
+                }
+            }
+        }
+    };
+    unreachable!();
+}
+
+fn part2(input: &str) -> i32 {
+    let (grid, start, end) = parse(input);
+
+    let mut scores: HashMap<(i32, i32), i32> = HashMap::new();
+    let mut to_visit: VecDeque<(i32, i32)> = VecDeque::new();
+
+    scores.insert(start, 0);
+    to_visit.push_front(start);
+
+    let dirs: [(i32, i32); 4] = [(1, 0), (-1, 0), (0, 1), (0, -1)];
+
+    while let o = to_visit.pop_back().unwrap() {
+        if o == end {
+            return scores.get(&o).unwrap().clone()
+        }
+
+        for dir in dirs {
+            let w = (o.0 + dir.0, o.1 + dir.1);
+            if let Some(n) = grid.get(&w) {
+                if !scores.contains_key(&w) && *grid.get(&o).unwrap() >= n - 1 {
+                    to_visit.push_front(w);
+                    let new_score = if *n == 'a' as i32 {
+                        0
                     } else {
-                        continue
-                    }
+                        scores.get(&o).unwrap() + 1
+                    };
+                    scores.insert(w, new_score);
                 }
             }
         }
