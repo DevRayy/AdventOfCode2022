@@ -13,10 +13,10 @@ fn main() {
     println!("Part 1 time: {:.2?}", part1_start.elapsed());
     println!("Part 1 ans : {}", part1_ans);
 
-    // let part2_start = Instant::now();
-    // let part2_ans = part2(&input);
-    // println!("Part 2 time: {:.2?}", part2_start.elapsed());
-    // println!("Part 2 ans : {:.2?}", part2_ans);
+    let part2_start = Instant::now();
+    let part2_ans = part2(&input);
+    println!("Part 2 time: {:.2?}", part2_start.elapsed());
+    println!("Part 2 ans : {:.2?}", part2_ans);
 }
 
 #[derive(Debug)]
@@ -97,4 +97,19 @@ fn part1(input: &str) -> usize {
         .filter(|(_, ord)| *ord == Ordering::Less)
         .map(|(idx, _)| idx + 1)
         .sum::<usize>()
+}
+
+fn part2(input: &str) -> usize {
+    let mut pairs = parse(input);
+    let dividers = vec![Packet::new("[[2]]"), Packet::new("[[6]]")];
+    pairs.push(dividers);
+
+    let mut packets = pairs.iter()
+        .flatten()
+        .collect::<Vec<&Packet>>();
+
+    packets.sort_by(|a, b| a.cmp(b));
+
+    (1 + packets.iter().position(|x| x.cmp(&Packet::new("[[2]]")) == Ordering::Equal).unwrap()) *
+        (1 + packets.iter().position(|x| x.cmp(&Packet::new("[[6]]")) == Ordering::Equal).unwrap())
 }
