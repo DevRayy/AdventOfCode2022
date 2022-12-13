@@ -1,7 +1,5 @@
 use std::cmp::Ordering;
-use std::collections::{HashMap, VecDeque};
 use std::fs;
-use std::str::Split;
 use std::time::Instant;
 
 fn main() {
@@ -40,7 +38,7 @@ impl Packet {
                 '[' => depth += 1,
                 ']' => depth -= 1,
                 ',' => {
-                    if depth ==0 {
+                    if depth == 0 {
                         let inner = Packet::new(&input[start..i]);
                         inner_packets.push(inner);
                         start = i+1;
@@ -100,16 +98,18 @@ fn part1(input: &str) -> usize {
 }
 
 fn part2(input: &str) -> usize {
-    let mut pairs = parse(input);
-    let dividers = vec![Packet::new("[[2]]"), Packet::new("[[6]]")];
-    pairs.push(dividers);
+    let pairs = parse(input);
 
-    let mut packets = pairs.iter()
+    let mut packets = pairs.into_iter()
         .flatten()
-        .collect::<Vec<&Packet>>();
+        .collect::<Vec<Packet>>();
 
+    packets.push(Packet::new("[[2]]"));
+    packets.push(Packet::new("[[6]]"));
     packets.sort_by(|a, b| a.cmp(b));
 
-    (1 + packets.iter().position(|x| x.cmp(&Packet::new("[[2]]")) == Ordering::Equal).unwrap()) *
-        (1 + packets.iter().position(|x| x.cmp(&Packet::new("[[6]]")) == Ordering::Equal).unwrap())
+    let div1 = Packet::new("[[2]]");
+    let div2 = Packet::new("[[6]]");
+    (1 + packets.iter().position(|x| x.cmp(&div1) == Ordering::Equal).unwrap()) *
+        (1 + packets.iter().position(|x| x.cmp(&div2) == Ordering::Equal).unwrap())
 }
