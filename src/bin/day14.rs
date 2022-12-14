@@ -12,10 +12,10 @@ fn main() {
     println!("Part 1 time: {:.2?}", part1_start.elapsed());
     println!("Part 1 ans : {}", part1_ans);
 
-    // let part2_start = Instant::now();
-    // let part2_ans = part2(&input);
-    // println!("Part 2 time: {:.2?}", part2_start.elapsed());
-    // println!("Part 2 ans : {:.2?}", part2_ans);
+    let part2_start = Instant::now();
+    let part2_ans = part2(&input);
+    println!("Part 2 time: {:.2?}", part2_start.elapsed());
+    println!("Part 2 ans : {:.2?}", part2_ans);
 }
 
 #[derive(PartialEq)]
@@ -71,6 +71,51 @@ fn part1(input: &str) -> usize {
                 break 'outer;
             }
             let new_sand = (sand.0, sand.1 + 1);
+            if !blocks.contains_key(&new_sand) {
+                sand = new_sand;
+                continue;
+            }
+
+            let new_sand = (sand.0-1, sand.1 + 1);
+            if !blocks.contains_key(&new_sand) {
+                sand = new_sand;
+                continue;
+            }
+
+            let new_sand = (sand.0 + 1, sand.1 + 1);
+            if !blocks.contains_key(&new_sand) {
+                sand = new_sand;
+                continue;
+            }
+
+            blocks.insert(sand, Block::Water);
+            break;
+        }
+    }
+
+    blocks.values().filter(|&k| *k == Block::Water).count()
+}
+
+fn part2(input: &str) -> usize {
+    let mut blocks = parse(input);
+    let origin = (500 as u64, 0 as u64);
+
+    let abbys_level = blocks.keys()
+        .map(|(x, y)| y)
+        .max()
+        .unwrap() + 2;
+
+    'outer: loop {
+        let mut sand = origin.clone();
+        loop {
+            if blocks.contains_key(&origin) {
+                break 'outer;
+            }
+            let new_sand = (sand.0, sand.1 + 1);
+            if new_sand.1 == abbys_level {
+                blocks.insert(sand, Block::Water);
+                break;
+            }
             if !blocks.contains_key(&new_sand) {
                 sand = new_sand;
                 continue;
