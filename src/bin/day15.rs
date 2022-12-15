@@ -1,7 +1,9 @@
 use std::cmp::{max, min, Ordering};
 use std::collections::{HashMap, HashSet};
 use std::fs;
+use std::iter::FromIterator;
 use std::time::Instant;
+use itertools::Itertools;
 use regex::Regex;
 
 fn main() {
@@ -13,10 +15,10 @@ fn main() {
     println!("Part 1 time: {:.2?}", part1_start.elapsed());
     println!("Part 1 ans : {}", part1_ans);
 
-    // let part2_start = Instant::now();
-    // let part2_ans = part2(&input);
-    // println!("Part 2 time: {:.2?}", part2_start.elapsed());
-    // println!("Part 2 ans : {:.2?}", part2_ans);
+    let part2_start = Instant::now();
+    let part2_ans = part2(&input);
+    println!("Part 2 time: {:.2?}", part2_start.elapsed());
+    println!("Part 2 ans : {:.2?}", part2_ans);
 }
 
 #[derive(Debug)]
@@ -57,7 +59,7 @@ fn parse(input: &str) -> Vec<Sensor> {
 
 fn part1(input: &str) -> usize {
     let sensors = parse(input);
-    let target_y: i64 = 2000000;
+    let target_y: i64 = 10;
 
     let mut nobeacons = HashSet::<i64>::new();
 
@@ -75,5 +77,39 @@ fn part1(input: &str) -> usize {
     }
 
     nobeacons.len()
+}
+
+fn part2(input: &str) -> usize {
+    let sensors = parse(input);
+    let max_x = 4000000;
+    let max_y = 4000000;
+
+    let candidates = sensors.iter()
+        .map(|s| {
+            let mut points = Vec::<(i64, i64)>::new();
+            for a in 0..s.range+1 {
+                points.push((s.pos.0+a, s.pos.1+(s.range+1)-a));
+                points.push((s.pos.0+a, s.pos.1-((s.range+1)-a)));
+                points.push((s.pos.0-a, s.pos.1+(s.range+1)-a));
+                points.push((s.pos.0-a, s.pos.1-((s.range+1)-a)));
+            }
+            points
+        })
+        .flatten()
+        .filter(|p| {
+            p.0 >= 0 && p.0 <= max_x && p.1 >= 0 && p.1 <= max_y
+        })
+        .collect::<HashSet<(i64, i64)>>();
+
+    for c in candidates {
+        if sensors.iter()
+            .filter(|s| {
+                manhattan(c, s.pos) <= s.range
+            })
+            .count() == 0 {
+            return (c.0 * 4000000 + c.1) as usize
+        }
+    }
+    unreachable!()
 }
 
