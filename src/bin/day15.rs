@@ -1,10 +1,8 @@
-use std::cmp::{max, min, Ordering};
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 use std::fs;
-use std::iter::FromIterator;
 use std::time::Instant;
-use itertools::Itertools;
 use regex::Regex;
+use rayon::prelude::*;
 
 fn main() {
     let input = fs::read_to_string("data/day15.txt")
@@ -21,10 +19,8 @@ fn main() {
     println!("Part 2 ans : {:.2?}", part2_ans);
 }
 
-#[derive(Debug)]
 struct Sensor {
     pos: (i64, i64),
-    beacon: (i64, i64),
     range: i64,
 }
 
@@ -32,7 +28,6 @@ impl Sensor {
     fn new(pos: (i64, i64), beacon: (i64, i64)) -> Sensor {
         Sensor{
             pos,
-            beacon,
             range: manhattan(pos, beacon),
         }
     }
@@ -59,7 +54,7 @@ fn parse(input: &str) -> Vec<Sensor> {
 
 fn part1(input: &str) -> usize {
     let sensors = parse(input);
-    let target_y: i64 = 10;
+    let target_y: i64 = 2000000;
 
     let mut nobeacons = HashSet::<i64>::new();
 
@@ -84,7 +79,7 @@ fn part2(input: &str) -> usize {
     let max_x = 4000000;
     let max_y = 4000000;
 
-    let point = sensors.iter()
+    let point = sensors.par_iter()
         .map(|s| {
             let mut points = Vec::<(i64, i64)>::with_capacity(4*(s.range as usize +1));
             for a in 0..s.range+1 {
@@ -107,8 +102,7 @@ fn part2(input: &str) -> usize {
                 })
                 .count() == 0
         })
-        .next()
-        .unwrap();
+        .collect::<Vec<_>>()[0];
 
     return (point.0 * 4000000 + point.1) as usize
 }
