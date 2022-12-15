@@ -84,9 +84,9 @@ fn part2(input: &str) -> usize {
     let max_x = 4000000;
     let max_y = 4000000;
 
-    let candidates = sensors.iter()
+    let point = sensors.iter()
         .map(|s| {
-            let mut points = Vec::<(i64, i64)>::new();
+            let mut points = Vec::<(i64, i64)>::with_capacity(4*(s.range as usize +1));
             for a in 0..s.range+1 {
                 points.push((s.pos.0+a, s.pos.1+(s.range+1)-a));
                 points.push((s.pos.0+a, s.pos.1-((s.range+1)-a)));
@@ -96,20 +96,20 @@ fn part2(input: &str) -> usize {
             points
         })
         .flatten()
-        .filter(|p| {
-            p.0 >= 0 && p.0 <= max_x && p.1 >= 0 && p.1 <= max_y
+        .filter(|&p| {
+            p.0 >= 0 &&
+            p.0 <= max_x &&
+            p.1 >= 0 &&
+            p.1 <= max_y &&
+            sensors.iter()
+                .filter(|s| {
+                    manhattan(p, s.pos) <= s.range
+                })
+                .count() == 0
         })
-        .collect::<HashSet<(i64, i64)>>();
+        .next()
+        .unwrap();
 
-    for c in candidates {
-        if sensors.iter()
-            .filter(|s| {
-                manhattan(c, s.pos) <= s.range
-            })
-            .count() == 0 {
-            return (c.0 * 4000000 + c.1) as usize
-        }
-    }
-    unreachable!()
+    return (point.0 * 4000000 + point.1) as usize
 }
 
