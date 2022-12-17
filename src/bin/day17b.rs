@@ -10,11 +10,13 @@ fn main() {
     let part1_ans = part1(&input);
     println!("Part 1 time: {:.2?}", part1_start.elapsed());
     println!("Part 1 ans : {}", part1_ans);
+    assert_eq!(part1_ans, 3048);
 
-    // let part2_start = Instant::now();
-    // let part2_ans = part2(&input);
-    // println!("Part 2 time: {:.2?}", part2_start.elapsed());
-    // println!("Part 2 ans : {:.2?}", part2_ans);
+    let part2_start = Instant::now();
+    let part2_ans = part2(&input);
+    println!("Part 2 time: {:.2?}", part2_start.elapsed());
+    println!("Part 2 ans : {:.2?}", part2_ans);
+    assert_eq!(part2_ans, 1504093567249);
 }
 
 #[derive(Eq, PartialEq, Debug)]
@@ -67,21 +69,6 @@ impl Board {
 
     fn materialize(&mut self, b: &mut Vec<Point>) {
         self.inner.append(b)
-    }
-
-    fn print(&self) {
-        println!("");
-        for y in (0..self.max_height() as i64 + 1).rev() {
-            for x in 0..7 {
-                let p = Point::new(x, y);
-                print!("{}", if self.inner.contains(&p) {
-                    "#"
-                } else {
-                    "."
-                });
-            }
-            print!("\n");
-        }
     }
 }
 
@@ -140,7 +127,6 @@ impl <'a> Brick<'a> {
 
 fn part1(input: &str) -> usize {
     let valves = input.trim_end().chars().collect::<Vec<char>>();
-    let mut board = Board::new();
     let brick_templates: Vec<Vec<Point>> = vec![
         vec![Point::new(0, 0), Point::new(1, 0), Point::new(2, 0), Point::new(3, 0)],
         vec![Point::new(1, 0), Point::new(0, 1), Point::new(1, 1), Point::new(2, 1), Point::new(1, 2)],
@@ -148,6 +134,40 @@ fn part1(input: &str) -> usize {
         vec![Point::new(0, 0), Point::new(0, 1), Point::new(0, 2), Point::new(0, 3)],
         vec![Point::new(0, 0), Point::new(0, 1), Point::new(1, 0), Point::new(1, 1)],
     ];
+
+    solve(&valves, &brick_templates, 2022)
+}
+
+fn part2(input: &str) -> usize {
+    let valves = input.trim_end().chars().collect::<Vec<char>>();
+    let brick_templates: Vec<Vec<Point>> = vec![
+        vec![Point::new(0, 0), Point::new(1, 0), Point::new(2, 0), Point::new(3, 0)],
+        vec![Point::new(1, 0), Point::new(0, 1), Point::new(1, 1), Point::new(2, 1), Point::new(1, 2)],
+        vec![Point::new(0, 0), Point::new(1, 0), Point::new(2, 0), Point::new(2, 1), Point::new(2, 2)],
+        vec![Point::new(0, 0), Point::new(0, 1), Point::new(0, 2), Point::new(0, 3)],
+        vec![Point::new(0, 0), Point::new(0, 1), Point::new(1, 0), Point::new(1, 1)],
+    ];
+
+    let target_brick_count = 1000000000000 as usize;
+
+    let checkpoint = valves.len();
+
+    let (brick_count2, height2) = solve2(&valves, &brick_templates, checkpoint * 2);
+    let (brick_count3, height3) = solve2(&valves, &brick_templates, checkpoint * 3);
+
+    let brick_count_diff = brick_count3 - brick_count2;
+    let h_diff = height3 - height2;
+
+    let h = (target_brick_count / brick_count_diff) * h_diff;
+
+    let remaining_brick_count = target_brick_count % brick_count_diff;
+    let remaining_h = solve(&valves, &brick_templates, remaining_brick_count);
+
+    h + remaining_h
+}
+
+fn solve(valves: &Vec<char>, brick_templates: &Vec<Vec<Point>>, max_bricks: usize) -> usize {
+    let mut board = Board::new();
     let mut valve_count: usize = 0;
     let mut brick_count: usize = 0;
 
@@ -184,10 +204,49 @@ fn part1(input: &str) -> usize {
             board.max_height() + 4
         );
 
-        if brick_count == 2022 {
+        if brick_count == max_bricks {
             return board.max_height()
         }
     }
+}
 
-    unreachable!()
+fn solve2(valves: &Vec<char>, brick_templates: &Vec<Vec<Point>>, max_simsteps: usize) -> (usize, usize) {
+    let mut board = Board::new();
+    let mut valve_count: usize = 0;
+    let mut brick_count: usize = 0;
+
+    let mut brick = Brick::new(
+        &brick_templates[brick_count % brick_templates.len()],
+        2,
+        board.max_height() + 4
+    );
+
+    for _ in 0..max_simsteps {
+        let valve = valves[valve_count % valves.len()];
+        valve_count += 1;
+
+        match valve {
+            '<' => { brick.push_left(&board) }
+            '>' => { brick.push_right(&board) }
+            _ => unreachable!()
+        }
+
+        let next_positions = brick.moved_by(Point::new(0, -1));
+        let blocked = board.is_blocked(&next_positions);
+        if !blocked {
+            brick.fall();
+            continue
+        }
+
+        let mut materialized_block = brick.moved_by(Point::new(0, 0));
+        board.materialize(&mut materialized_block);
+
+        brick_count += 1;
+        brick = Brick::new(
+            &brick_templates[brick_count % brick_templates.len()],
+            2,
+            board.max_height() + 4
+        );
+    }
+    return (brick_count, board.max_height())
 }
