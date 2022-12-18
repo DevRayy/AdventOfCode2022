@@ -1,9 +1,7 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::fs;
 use std::time::Instant;
-use itertools::Itertools;
 use regex::Regex;
-use rayon::prelude::*;
 
 fn main() {
     let input = fs::read_to_string("data/day16.txt")
@@ -21,39 +19,70 @@ fn main() {
 }
 
 #[derive(Debug)]
-struct Valve {
-    id: String,
+struct Valve<'a> {
     rate: u64,
-    neighbours: Vec<String>,
+    neighbours: HashMap<&'a str, usize>,
 }
 
-impl Valve {
-    fn new(id: &str, rate: u64, neighbours_raw: &str) -> Valve {
+impl <'a> Valve<'a> {
+    fn new(rate: u64, neighbours_raw: &str) -> Valve {
         Valve{
-            id: String::from(id),
             rate,
-            neighbours: neighbours_raw.split(", ").map(|x| String::from(x)).collect(),
+            neighbours: neighbours_raw.split(", ").map(|x| (x, 1)).collect(),
+        }
+    }
+
+    fn expanded(&self, graph: &HashMap<&str, Valve<'a>>, id: &str) -> Valve {
+        let mut new_neighbours: HashMap<&str, usize> = self.neighbours.clone();
+        loop {
+            let mut neighbours_to_add: HashMap<&str, usize> = HashMap::new();
+            for (n, cost) in &new_neighbours {
+                graph.get(n)
+                    .unwrap()
+                    .neighbours
+                    .iter()
+                    .filter(|(n2, _)| **n2 != id && !new_neighbours.contains_key(*n2))
+                    .for_each(|(n2, cost2)| {
+                        neighbours_to_add.insert(n2, cost + cost2);
+                    });
+            }
+            if neighbours_to_add.len() == 0 {
+                break;
+            }
+            new_neighbours.extend(neighbours_to_add);
+        }
+        Valve{
+            rate: self.rate,
+            neighbours: new_neighbours,
         }
     }
 }
 
-fn parse(input: &str) -> Vec<Valve> {
+fn parse(input: &str) -> HashMap<&str, Valve> {
     let re = Regex::new(r"Valve (.+) has flow rate=(\d+); tunnels? leads? to valves? (.+)").unwrap();
     input.split("\n")
         .map(|line| {
             let caps = re.captures(line).unwrap();
-            Valve::new(
-                caps.get(1).unwrap().as_str(),
+            let id = caps.get(1).unwrap().as_str();
+            let valve = Valve::new(
                 caps.get(2).unwrap().as_str().parse().unwrap(),
                 caps.get(3).unwrap().as_str()
-            )
+            );
+            (id, valve)
         })
         .collect()
 }
 
 fn part1(input: &str) -> usize {
-    let graph = parse(input);
-    let mut budget: i64 = 30;
-    println!("{:?}", graph);
+    let mut graph = parse(input);
+
+    let graph = graph.iter()
+        .map(|(id, valve)| (*id, valve.expanded(&graph, *id)))
+        .collect::<HashMap<&str, Valve>>();
+
+    for (k, v) in graph {
+        println!("{}: {:?}", k, v);
+    }
+
     0
 }
