@@ -100,40 +100,38 @@ fn part1(input: &str) -> usize {
     let graph = reduce_graph(&graph);
     let budget = 30;
 
-    graph.iter().for_each(|(k, v)| println!("{}: {:?}", k, v));
+    let mut q: VecDeque<(Vec<&str>, usize, usize)> = VecDeque::new();
+    q.push_front((vec!["AA"], 0, 0));
 
-    let mut q: VecDeque<Vec<&str>> = VecDeque::new();
-    q.push_front(vec!["AA"]);
+    let mut scores: Vec<usize> = Vec::new();
 
-    let mut searchspace: Vec<Vec<&str>> = Vec::new();
-
-    while let Some(path) = q.pop_back() {
+    while let Some((path, path_cost, path_score)) = q.pop_back() {
         let current_node = path.last().unwrap();
-        let mut pushed = false;
-        for (next_node, _) in &graph.get(current_node).unwrap().neighbours {
-            if path.contains(&next_node) {
-                continue
-            }
-            let mut next_path = path.clone();
-            if !is_in_budget(&next_path, &graph, budget) {
-                continue
-            }
-            next_path.push(next_node);
-            q.push_front(next_path);
-            pushed = true;
-        }
-        if !pushed {
-            searchspace.push(path);
-        }
+        scores.push(path_score);
+
+        let new_paths = graph.get(current_node)
+            .unwrap()
+            .neighbours
+            .iter()
+            .filter(|(next_node, next_cost)| {
+                !path.contains(next_node) && *next_cost + path_cost + 1 < budget
+            })
+            .map(|(next_node, next_cost)| {
+                let next_path_cost = next_cost + path_cost + 1;
+
+                let next_score = (budget - next_path_cost as usize) * graph.get(next_node).unwrap().rate;
+                let next_path_score = next_score + path_score;
+
+                let mut next_path = path.clone();
+                next_path.push(next_node);
+
+                (next_path, next_path_cost, next_path_score)
+            })
+            .collect::<Vec<_>>();
+        new_paths.iter().for_each(|p| q.push_front(p.clone()));
     }
 
-    // println!("{:?}", searchspace);
-    println!("searchspace len: {:?}", searchspace.len());
-
-    searchspace.iter()
-        .map(|path| evaluate(path, &graph, budget))
-        .max()
-        .unwrap()
+    *scores.iter().max().unwrap()
 }
 
 fn is_in_budget(path: &Vec<&str>, graph: &HashMap<&str, Valve>, max_budget: i32) -> bool {
