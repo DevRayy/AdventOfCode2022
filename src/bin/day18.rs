@@ -1,5 +1,6 @@
 use std::fs;
 use std::time::Instant;
+use rayon::prelude::*;
 
 fn main() {
     let input = fs::read_to_string("data/day18.txt")
@@ -30,7 +31,7 @@ fn parse(input: &str) -> Vec<(i64, i64, i64)> {
 fn part1(input: &str) -> usize {
     let cubes = parse(input);
 
-    cubes.iter()
+    cubes.par_iter()
         .map(|cube| {
             6 - cubes.iter()
                 .map(|cube2| manhattan(cube, cube2))
