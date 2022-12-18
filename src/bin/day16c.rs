@@ -1,9 +1,7 @@
 use std::collections::{HashMap, VecDeque};
 use std::fs;
 use std::time::Instant;
-use itertools::Itertools;
 use regex::Regex;
-use rayon::prelude::*;
 
 fn main() {
     let input = fs::read_to_string("data/day16.txt")
@@ -109,14 +107,14 @@ fn part1(input: &str) -> usize {
         let current_node = path.last().unwrap();
         scores.push(path_score);
 
-        let new_paths = graph.get(current_node)
+        graph.get(current_node)
             .unwrap()
             .neighbours
             .iter()
             .filter(|(next_node, next_cost)| {
                 !path.contains(next_node) && *next_cost + path_cost + 1 < budget
             })
-            .map(|(next_node, next_cost)| {
+            .for_each(|(next_node, next_cost)| {
                 let next_path_cost = next_cost + path_cost + 1;
 
                 let next_score = (budget - next_path_cost as usize) * graph.get(next_node).unwrap().rate;
@@ -125,36 +123,9 @@ fn part1(input: &str) -> usize {
                 let mut next_path = path.clone();
                 next_path.push(next_node);
 
-                (next_path, next_path_cost, next_path_score)
+                q.push_front((next_path, next_path_cost, next_path_score));
             })
-            .collect::<Vec<_>>();
-        new_paths.iter().for_each(|p| q.push_front(p.clone()));
     }
 
     *scores.iter().max().unwrap()
 }
-
-fn is_in_budget(path: &Vec<&str>, graph: &HashMap<&str, Valve>, max_budget: i32) -> bool {
-    path.iter()
-        .tuples()
-        .map(|(current, next)| {
-            1 + *graph.get(current).unwrap().neighbours.get(next).unwrap() as i32
-        })
-        .sum::<i32>() <= max_budget
-}
-
-fn evaluate(path: &Vec<&str>, graph: &HashMap<&str, Valve>, budget: i32) -> usize {
-    let mut budget: i32 = budget;
-    let mut current_node = "AA";
-    let mut score: usize = 0;
-
-    for destination in &path[1..] {
-        let cost = 1 + graph.get(current_node).unwrap().neighbours.get(destination).unwrap();
-        current_node = destination;
-        budget -= cost as i32;
-        score += budget as usize * graph.get(destination).unwrap().rate;
-    }
-
-    score
-}
-
