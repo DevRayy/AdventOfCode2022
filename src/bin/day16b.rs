@@ -85,31 +85,21 @@ fn part1(input: &str) -> usize {
         .map(|(k, _)| *k)
         .collect::<Vec<&str>>();
 
-    let mut scores: HashMap<Vec<&str>, Option<(usize, usize)>> = HashMap::new();
+    let mut max_score: usize = 0;
     for no_of_permutations in 1..destinations.len()+1 {
-        println!("{}", no_of_permutations);
-        let scores_len = scores.len();
+        println!("permutation len = {}", no_of_permutations);
 
         for combination in destinations.iter().cloned().permutations(no_of_permutations) {
-            let evaluated = evaluate_combination(&combination, &graph, &scores);
-            scores.insert(combination, evaluated);
-            // match evaluate_combination(&combination, &graph, &scores) {
-            //     None => continue,
-            //     Some((budget_left, score)) => {
-            //         scores.insert(combination, (budget_left, score));
-            //     }
-            // }
-        }
-        if scores_len == scores.len() {
-            break;
+            if let Some(score) = evaluate_combination(&combination, &graph) {
+                if score > max_score {
+                    max_score = score;
+                    println!("new max {}", max_score);
+                }
+            }
         }
     }
 
-    scores.iter()
-        .filter(|(_, cached)| cached.is_some())
-        .map(|(_, cached)| cached.unwrap().1)
-        .max()
-        .unwrap()
+    0
 }
 
 fn reduce_graph<'a>(graph: &'a HashMap<&str, Valve>) -> HashMap<&'a str, Valve<'a>> {
@@ -131,36 +121,20 @@ fn reduce_graph<'a>(graph: &'a HashMap<&str, Valve>) -> HashMap<&'a str, Valve<'
     graph
 }
 
-fn evaluate_combination(path: &Vec<&str>, graph: &HashMap<&str, Valve>, scores: &HashMap<Vec<&str>, Option<(usize, usize)>>) -> Option<(usize, usize)> {
+fn evaluate_combination(path: &Vec<&str>, graph: &HashMap<&str, Valve>) -> Option<usize> {
     let mut budget: i32 = 30;
     let mut current_node = "AA";
     let mut score: usize = 0;
 
-    if path.len() > 1 { //do not try this on empty path
-        let cached = scores.get(&path.clone()[0..path.len() - 1]);
-        match cached {
-            None => {}
-            Some(cached_item) => {
-                match cached_item {
-                    None => return None,
-                    Some((b, c)) => {
-                        budget = *b as i32;
-                        score = *c;
-                        current_node = path[path.len() - 2];
-                    }
-                }
-            }
+    for destination in path {
+        let cost = 1 + graph.get(current_node).expect("1").neighbours.get(destination).expect("2");
+        current_node = destination;
+        budget -= cost as i32;
+        if budget < 0 {
+            return None
         }
+        score += budget as usize * graph.get(destination).unwrap().rate;
     }
 
-    let destination = path.last().unwrap();
-
-    let cost = 1 + graph.get(current_node).expect("1").neighbours.get(destination).expect("2");
-    budget -= cost as i32;
-    if budget < 0 {
-        return None
-    }
-    score += budget as usize * graph.get(destination).unwrap().rate;
-
-    Some((budget as usize, score))
+    Some(score)
 }
