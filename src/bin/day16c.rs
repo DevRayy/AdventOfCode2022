@@ -1,5 +1,5 @@
 use std::cmp::max;
-use std::collections::{HashMap, HashSet, VecDeque};
+use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet, VecDeque};
 use std::fs;
 use std::slice::SliceIndex;
 use std::time::Instant;
@@ -10,15 +10,17 @@ fn main() {
     let input = fs::read_to_string("data/day16.txt")
         .expect("Unable to load input file");
 
-    // let part1_start = Instant::now();
-    // let part1_ans = part1(&input);
-    // println!("Part 1 time: {:.2?}", part1_start.elapsed());
-    // println!("Part 1 ans : {}", part1_ans);
-    //
+    let part1_start = Instant::now();
+    let part1_ans = part1(&input);
+    println!("Part 1 time: {:.2?}", part1_start.elapsed());
+    println!("Part 1 ans : {}", part1_ans);
+    assert_eq!(part1_ans, 1728);
+
     let part2_start = Instant::now();
     let part2_ans = part2(&input);
     println!("Part 2 time: {:.2?}", part2_start.elapsed());
     println!("Part 2 ans : {:.2?}", part2_ans);
+    assert_eq!(part2_ans, 2304)
 }
 
 #[derive(Debug)]
@@ -104,11 +106,11 @@ fn part1(input: &str) -> usize {
     let mut q: VecDeque<(Vec<&str>, usize, usize)> = VecDeque::new();
     q.push_front((vec!["AA"], 0, 0));
 
-    let mut scores: Vec<usize> = Vec::new();
+    let mut scores: Vec<State> = Vec::new();
 
     while let Some((path, path_cost, path_score)) = q.pop_back() {
         let current_node = path.last().unwrap();
-        scores.push(path_score);
+        scores.push(State::new(path.clone(), path_cost, path_score));
 
         graph.get(current_node)
             .unwrap()
@@ -130,10 +132,69 @@ fn part1(input: &str) -> usize {
             })
     }
 
-    *scores.iter().max().unwrap()
+    scores.into_iter()
+        .map(|s| s.score)
+        .max()
+        .unwrap()
 }
 
-#[derive(Clone, Eq, PartialEq)]
+fn part2(input: &str) -> usize {
+    let graph = parse(input);
+    let graph = reduce_graph(&graph);
+    let budget = 26;
+
+    let mut q: VecDeque<(Vec<&str>, usize, usize)> = VecDeque::new();
+    q.push_front((vec!["AA"], 0, 0));
+
+    let mut scores: Vec<State> = Vec::new();
+
+    while let Some((path, path_cost, path_score)) = q.pop_back() {
+        let current_node = path.last().unwrap();
+        scores.push(State::new(path.clone(), path_cost, path_score));
+
+        graph.get(current_node)
+            .unwrap()
+            .neighbours
+            .iter()
+            .filter(|(next_node, next_cost)| {
+                !path.contains(next_node) && *next_cost + path_cost + 1 < budget
+            })
+            .for_each(|(next_node, next_cost)| {
+                let mut next_path = path.clone();
+                next_path.push(next_node);
+                let next_path_cost = next_cost + path_cost + 1;
+
+                let next_score = (budget - next_path_cost as usize) * graph.get(next_node).unwrap().rate;
+                let next_path_score = next_score + path_score;
+
+                q.push_front((next_path, next_path_cost, next_path_score));
+            })
+    }
+
+    // let mut scores = scores.iter()
+    //     .filter()
+    //     .sorted_by(|a, b| a.1.cmp(&b.1))
+    //     .collect::<Vec<_>>();
+
+    // scores = scores.iter()
+    //     .filter(|s| s.sco)
+    let max_score = scores.iter()
+        .map(|s| s.score)
+        .max()
+        .unwrap();
+    scores = scores.into_iter()
+        .filter(|s| s.score > max_score * 2 / 3) //FIXME magic numbers
+        .collect();
+    scores.sort_by(|a, b| a.score.cmp(&b.score).reverse());
+    scores.iter()
+        .permutations(2)
+        .filter(|x| !x[0].path[1..].iter().any(|y| x[1].path.contains(y)))
+        .map(|x| x[0].score + x[1].score)
+        .max()
+        .unwrap()
+}
+
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Debug)]
 struct State<'a> {
     path: Vec<&'a str>,
     cost: usize,
@@ -144,60 +205,4 @@ impl <'a> State<'a> {
     fn new(path: Vec<&'a str>, cost: usize, score: usize) -> State {
         State {path, cost, score}
     }
-}
-
-fn part2(input: &str) -> usize {
-    let graph = parse(input);
-    let graph = reduce_graph(&graph);
-    let budget = 26;
-
-    // let mut q: VecDeque<State> = VecDeque::new();
-    // q.push_front(State::new(vec!["AA"], 0, 0));
-    let mut q: VecDeque<(State, State)> = VecDeque::new();
-    q.push_front((State::new(vec!["AA"], 0, 0),
-                  State::new(vec!["AA"], 0, 0)));
-
-    // let mut scores: Vec<(State, State)> = Vec::new();
-    let mut max_score: usize = 0;
-
-    while let Some((state1, state2)) = q.pop_front() {
-        // scores.push((state1.clone(), state2.clone()));
-        let score = state1.score + state2.score;
-        if score > max_score {
-            max_score = score;
-            println!("max score: {}", max_score);
-        }
-
-        for s in gen_new_states(&graph, budget, &state1, &state2) {
-            q.push_front((s, state2.clone()));
-        }
-        for s in gen_new_states(&graph, budget, &state2, &state1) {
-            q.push_front((state1.clone(), s));
-        }
-    }
-    0
-}
-
-fn gen_new_states<'a>(graph: &'a HashMap<&str, Valve>, budget: usize, state: &State<'a>, state2: &State) -> Vec<State<'a>> {
-    let current_node = state.path.last().unwrap();
-
-    graph.get(current_node)
-        .unwrap()
-        .neighbours
-        .iter()
-        .filter(|(next_node, next_cost)| {
-            !state.path.contains(next_node) && !state2.path.contains(next_node) && max(state.cost + *next_cost, state2.cost) + 1 < budget
-        })
-        .map(|(next_node, next_cost)| {
-            let next_path_cost = next_cost + state.cost + 1;
-
-            let next_score = (budget - next_path_cost as usize) * graph.get(next_node).unwrap().rate;
-            let next_path_score = next_score + state.score;
-
-            let mut next_path = state.path.clone();
-            next_path.push(next_node);
-
-            State::new(next_path, next_path_cost, next_path_score)
-        })
-        .collect()
 }
