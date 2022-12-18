@@ -1,9 +1,8 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 use std::fs;
 use std::time::Instant;
-use regex::Regex;
 use itertools::Itertools;
-use rayon::prelude::*;
+use regex::Regex;
 
 fn main() {
     let input = fs::read_to_string("data/day16.txt")
@@ -13,11 +12,13 @@ fn main() {
     let part1_ans = part1(&input);
     println!("Part 1 time: {:.2?}", part1_start.elapsed());
     println!("Part 1 ans : {}", part1_ans);
+    assert_eq!(part1_ans, 1728);
 
-    // let part2_start = Instant::now();
-    // let part2_ans = part2(&input);
-    // println!("Part 2 time: {:.2?}", part2_start.elapsed());
-    // println!("Part 2 ans : {:.2?}", part2_ans);
+    let part2_start = Instant::now();
+    let part2_ans = part2(&input);
+    println!("Part 2 time: {:.2?}", part2_start.elapsed());
+    println!("Part 2 ans : {:.2?}", part2_ans);
+    assert_eq!(part2_ans, 2304)
 }
 
 #[derive(Debug)]
@@ -75,42 +76,6 @@ fn parse(input: &str) -> HashMap<&str, Valve> {
         .collect()
 }
 
-fn part1(input: &str) -> usize {
-    let graph = parse(input);
-
-    let graph = reduce_graph(&graph);
-
-    let destinations = graph.iter()
-        .filter(|(k, v)| **k != "AA")
-        .map(|(k, _)| *k)
-        .collect::<Vec<&str>>();
-
-    let mut scores: HashMap<Vec<&str>, Option<(usize, usize)>> = HashMap::new();
-    for no_of_permutations in 1..destinations.len()+1 {
-        println!("{}", no_of_permutations);
-        let scores_len = scores.len();
-
-        for combination in destinations.iter().cloned().permutations(no_of_permutations) {
-            let evaluated = evaluate_combination(&combination, &graph, &scores);
-            scores.insert(combination, evaluated);
-            // match evaluate_combination(&combination, &graph, &scores) {
-            //     None => continue,
-            //     Some((budget_left, score)) => {
-            //         scores.insert(combination, (budget_left, score));
-            //     }
-            // }
-        }
-        if scores_len == scores.len() {
-            break;
-        }
-    }
-
-    scores.iter()
-        .filter(|(_, cached)| cached.is_some())
-        .map(|(_, cached)| cached.unwrap().1)
-        .max()
-        .unwrap()
-}
 
 fn reduce_graph<'a>(graph: &'a HashMap<&str, Valve>) -> HashMap<&'a str, Valve<'a>> {
     let mut graph = graph.iter()
@@ -124,43 +89,109 @@ fn reduce_graph<'a>(graph: &'a HashMap<&str, Valve>) -> HashMap<&'a str, Valve<'
 
     graph.iter_mut()
         .for_each(|(_, v)| v.neighbours
-            .retain(|id, _| !keys_to_del.contains(id))
+            .retain(|id, _| !keys_to_del.contains(id) && *id != "AA")
         );
 
     graph.retain(|id, _| !keys_to_del.contains(id));
     graph
 }
 
-fn evaluate_combination(path: &Vec<&str>, graph: &HashMap<&str, Valve>, scores: &HashMap<Vec<&str>, Option<(usize, usize)>>) -> Option<(usize, usize)> {
-    let mut budget: i32 = 30;
-    let mut current_node = "AA";
-    let mut score: usize = 0;
+fn part1(input: &str) -> usize {
+    let graph = parse(input);
+    let graph = reduce_graph(&graph);
+    let budget = 30;
 
-    if path.len() > 1 { //do not try this on empty path
-        let cached = scores.get(&path.clone()[0..path.len() - 1]);
-        match cached {
-            None => {}
-            Some(cached_item) => {
-                match cached_item {
-                    None => return None,
-                    Some((b, c)) => {
-                        budget = *b as i32;
-                        score = *c;
-                        current_node = path[path.len() - 2];
-                    }
-                }
-            }
-        }
+    let mut q: VecDeque<(Vec<&str>, usize, usize)> = VecDeque::new();
+    q.push_front((vec!["AA"], 0, 0));
+
+    let mut scores: Vec<State> = Vec::new();
+
+    while let Some((path, path_cost, path_score)) = q.pop_back() {
+        let current_node = path.last().unwrap();
+        scores.push(State::new(path.clone(), path_cost, path_score));
+
+        graph.get(current_node)
+            .unwrap()
+            .neighbours
+            .iter()
+            .filter(|(next_node, next_cost)| {
+                !path.contains(next_node) && *next_cost + path_cost + 1 < budget
+            })
+            .for_each(|(next_node, next_cost)| {
+                let next_path_cost = next_cost + path_cost + 1;
+
+                let next_score = (budget - next_path_cost as usize) * graph.get(next_node).unwrap().rate;
+                let next_path_score = next_score + path_score;
+
+                let mut next_path = path.clone();
+                next_path.push(next_node);
+
+                q.push_front((next_path, next_path_cost, next_path_score));
+            })
     }
 
-    let destination = path.last().unwrap();
+    scores.into_iter()
+        .map(|s| s.score)
+        .max()
+        .unwrap()
+}
 
-    let cost = 1 + graph.get(current_node).expect("1").neighbours.get(destination).expect("2");
-    budget -= cost as i32;
-    if budget < 0 {
-        return None
+fn part2(input: &str) -> usize {
+    let graph = parse(input);
+    let graph = reduce_graph(&graph);
+    let budget = 26;
+
+    let mut q: VecDeque<(Vec<&str>, usize, usize)> = VecDeque::new();
+    q.push_front((vec!["AA"], 0, 0));
+
+    let mut scores: Vec<State> = Vec::new();
+
+    while let Some((path, path_cost, path_score)) = q.pop_back() {
+        let current_node = path.last().unwrap();
+        scores.push(State::new(path.clone(), path_cost, path_score));
+
+        graph.get(current_node)
+            .unwrap()
+            .neighbours
+            .iter()
+            .filter(|(next_node, next_cost)| {
+                !path.contains(next_node) && *next_cost + path_cost + 1 < budget
+            })
+            .for_each(|(next_node, next_cost)| {
+                let mut next_path = path.clone();
+                next_path.push(next_node);
+                let next_path_cost = next_cost + path_cost + 1;
+
+                let next_score = (budget - next_path_cost as usize) * graph.get(next_node).unwrap().rate;
+                let next_path_score = next_score + path_score;
+
+                q.push_front((next_path, next_path_cost, next_path_score));
+            })
     }
-    score += budget as usize * graph.get(destination).unwrap().rate;
 
-    Some((budget as usize, score))
+    let max_score = scores.iter()
+        .map(|s| s.score)
+        .max()
+        .unwrap();
+
+    scores.into_iter()
+        .filter(|s| s.score > max_score * 3 / 4) //FIXME magic numbers
+        .permutations(2)
+        .filter(|x| !x[0].path[1..].iter().any(|y| x[1].path.contains(y)))
+        .map(|x| x[0].score + x[1].score)
+        .max()
+        .unwrap()
+}
+
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Debug)]
+struct State<'a> {
+    path: Vec<&'a str>,
+    cost: usize,
+    score: usize,
+}
+
+impl <'a> State<'a> {
+    fn new(path: Vec<&'a str>, cost: usize, score: usize) -> State {
+        State {path, cost, score}
+    }
 }
