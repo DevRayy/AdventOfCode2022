@@ -14,10 +14,10 @@ fn main() {
     println!("Part 1 time: {:.2?}", part1_start.elapsed());
     println!("Part 1 ans : {}", part1_ans);
 
-    // let part2_start = Instant::now();
-    // let part2_ans = part2(&input);
-    // println!("Part 2 time: {:.2?}", part2_start.elapsed());
-    // println!("Part 2 ans : {:.2?}", part2_ans);
+    let part2_start = Instant::now();
+    let part2_ans = part2(&input);
+    println!("Part 2 time: {:.2?}", part2_start.elapsed());
+    println!("Part 2 ans : {:.2?}", part2_ans);
 }
 
 #[derive(Debug)]
@@ -77,29 +77,69 @@ fn parse(input: &str) -> HashMap<&str, Valve> {
 
 fn part1(input: &str) -> usize {
     let graph = parse(input);
-
     let graph = reduce_graph(&graph);
+    let budget = 30;
 
     let destinations = graph.iter()
         .filter(|(k, v)| **k != "AA")
         .map(|(k, _)| *k)
         .collect::<Vec<&str>>();
 
-    let mut max_score: usize = 0;
-    for no_of_permutations in 1..destinations.len()+1 {
-        println!("permutation len = {}", no_of_permutations);
+    let mut max_scores: Vec<usize> = Vec::new();
+    for no_of_permutations in 6..destinations.len()+1 {
+        // println!("permutation len = {}", no_of_permutations);
 
-        for combination in destinations.iter().cloned().permutations(no_of_permutations) {
-            if let Some(score) = evaluate_combination(&combination, &graph) {
-                if score > max_score {
-                    max_score = score;
-                    println!("new max {}", max_score);
+        let permutations = destinations.iter().cloned().permutations(no_of_permutations).collect::<Vec<Vec<&str>>>();
+        let m = permutations.par_iter()
+            .map(|permutation| {
+                match evaluate_permutation(&permutation, &graph, budget) {
+                    None => 0,
+                    Some(x) => x,
                 }
-            }
-        }
+            })
+            .max()
+            .unwrap();
+        // println!("max: {}", m);
+        max_scores.push(m);
     }
 
-    0
+    *max_scores.iter().max().unwrap()
+}
+
+fn part2(input: &str) -> usize {
+    let graph = parse(input);
+
+    let graph = reduce_graph(&graph);
+
+    let budget = 26;
+
+    let destinations = graph.iter()
+        .filter(|(k, v)| **k != "AA")
+        .map(|(k, _)| *k)
+        .collect::<Vec<&str>>();
+
+    let mut max_scores: Vec<usize> = Vec::new();
+    for no_of_permutations in 6..destinations.len()+1 {
+        // println!("permutation len = {}", no_of_permutations);
+
+        let permutations = destinations.iter().cloned().permutations(no_of_permutations).collect::<Vec<Vec<&str>>>();
+        let m = permutations.par_iter()
+            .map(|permutation| {
+                (2..permutation.len()-2).into_par_iter().map(|splitpoint| {
+                    let score1 = evaluate_permutation(&permutation[..splitpoint].to_vec(), &graph, budget);
+                    let score2 = evaluate_permutation(&permutation[splitpoint..].to_vec(), &graph, budget);
+                    score1.unwrap_or(0) + score2.unwrap_or(0)
+                })
+                .max()
+                .unwrap_or(0)
+            })
+            .max()
+            .unwrap_or(0);
+        // println!("max: {}", &m);
+        max_scores.push(m);
+    }
+
+    *max_scores.iter().max().unwrap()
 }
 
 fn reduce_graph<'a>(graph: &'a HashMap<&str, Valve>) -> HashMap<&'a str, Valve<'a>> {
@@ -121,8 +161,8 @@ fn reduce_graph<'a>(graph: &'a HashMap<&str, Valve>) -> HashMap<&'a str, Valve<'
     graph
 }
 
-fn evaluate_combination(path: &Vec<&str>, graph: &HashMap<&str, Valve>) -> Option<usize> {
-    let mut budget: i32 = 30;
+fn evaluate_permutation(path: &Vec<&str>, graph: &HashMap<&str, Valve>, budget: i32) -> Option<usize> {
+    let mut budget: i32 = budget;
     let mut current_node = "AA";
     let mut score: usize = 0;
 
