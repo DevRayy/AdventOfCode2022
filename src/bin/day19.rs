@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 use std::fs;
 use std::hash::Hash;
@@ -107,24 +107,7 @@ fn part1(input: &str) -> usize {
 
     blueprints.par_iter()
         .map(|(id, blueprint)| {
-            let mut states: Vec<State> = vec![State::new(blueprint)];
-            for i in 0..max_steps {
-                states = states.iter()
-                    .map(|s| s.branch())
-                    .flatten()
-                    .collect();
-                let current_best = states.iter()
-                    .max_by(|s1, s2| s1.resources.geode.cmp(&s2.resources.geode))
-                    .unwrap()
-                    .resources.geode;
-                states = states.into_iter()
-                    .filter(|s| current_best < s.resources.geode + max_steps - i)
-                    .collect();
-            }
-            states.iter()
-                .max_by(|s1, s2| s1.resources.geode.cmp(&s2.resources.geode))
-                .unwrap()
-                .resources.geode * id
+            find_max_geodes(blueprint, max_steps) * id
         })
         .sum::<i64>() as usize
 }
@@ -140,26 +123,30 @@ fn part2(input: &str) -> usize {
 
     blueprints.par_iter()
         .map(|blueprint| {
-            let mut states: Vec<State> = vec![State::new(blueprint)];
-            for i in 0..max_steps {
-                states = states.iter()
-                    .map(|s| s.branch())
-                    .flatten()
-                    .collect();
-                let current_best = states.iter()
-                    .max_by(|s1, s2| s1.resources.geode.cmp(&s2.resources.geode))
-                    .unwrap()
-                    .resources.geode;
-                states = states.into_iter()
-                    .filter(|s| current_best < s.resources.geode + max_steps - i)
-                    .collect();
-            }
-            states.iter()
-                .max_by(|s1, s2| s1.resources.geode.cmp(&s2.resources.geode))
-                .unwrap()
-                .resources.geode
+            find_max_geodes(blueprint, max_steps)
         })
         .product::<i64>() as usize
+}
+
+fn find_max_geodes(blueprint: &Blueprint, max_steps: i64) -> i64 {
+    let mut states: Vec<State> = vec![State::new(blueprint)];
+    for i in 0..max_steps {
+        states = states.iter()
+            .map(|s| s.branch())
+            .flatten()
+            .collect();
+        let current_best = states.iter()
+            .max_by(|s1, s2| s1.resources.geode.cmp(&s2.resources.geode))
+            .unwrap()
+            .resources.geode;
+        states = states.into_iter()
+            .filter(|s| current_best < s.resources.geode + max_steps - i)
+            .collect();
+    }
+    states.iter()
+        .max_by(|s1, s2| s1.resources.geode.cmp(&s2.resources.geode))
+        .unwrap()
+        .resources.geode
 }
 
 #[derive(Copy, Clone, Eq, PartialEq)]
