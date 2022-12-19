@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 use std::fs;
 use std::hash::Hash;
@@ -99,7 +99,7 @@ fn part1(input: &str) -> usize {
     // let blueprint = blueprints.get(&2).unwrap();
     let max_steps: i64 = 24;
 
-    blueprints.iter()
+    blueprints.par_iter()
         .map(|(id, blueprint)| {
             let mut states: Vec<State> = vec![State::new(blueprint)];
             for i in 0..max_steps {
