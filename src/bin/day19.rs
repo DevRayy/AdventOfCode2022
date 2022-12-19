@@ -16,10 +16,10 @@ fn main() {
     println!("Part 1 time: {:.2?}", part1_start.elapsed());
     println!("Part 1 ans : {}", part1_ans);
 
-    // let part2_start = Instant::now();
-    // let part2_ans = part2(&input);
-    // println!("Part 2 time: {:.2?}", part2_start.elapsed());
-    // println!("Part 2 ans : {:.2?}", part2_ans);
+    let part2_start = Instant::now();
+    let part2_ans = part2(&input);
+    println!("Part 2 time: {:.2?}", part2_start.elapsed());
+    println!("Part 2 ans : {:.2?}", part2_ans);
 }
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
@@ -127,6 +127,39 @@ fn part1(input: &str) -> usize {
                 .resources.geode * id
         })
         .sum::<i64>() as usize
+}
+
+fn part2(input: &str) -> usize {
+    let blueprints = parse(input);
+    let blueprints = [
+        *blueprints.get(&1).unwrap(),
+        *blueprints.get(&2).unwrap(),
+        *blueprints.get(&3).unwrap(),
+    ];
+    let max_steps: i64 = 32;
+
+    blueprints.par_iter()
+        .map(|blueprint| {
+            let mut states: Vec<State> = vec![State::new(blueprint)];
+            for i in 0..max_steps {
+                states = states.iter()
+                    .map(|s| s.branch())
+                    .flatten()
+                    .collect();
+                let current_best = states.iter()
+                    .max_by(|s1, s2| s1.resources.geode.cmp(&s2.resources.geode))
+                    .unwrap()
+                    .resources.geode;
+                states = states.into_iter()
+                    .filter(|s| current_best < s.resources.geode + max_steps - i)
+                    .collect();
+            }
+            states.iter()
+                .max_by(|s1, s2| s1.resources.geode.cmp(&s2.resources.geode))
+                .unwrap()
+                .resources.geode
+        })
+        .product::<i64>() as usize
 }
 
 #[derive(Copy, Clone, Eq, PartialEq)]
