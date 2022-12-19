@@ -1,8 +1,9 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fmt::{Debug, Formatter};
 use std::fs;
 use std::hash::Hash;
 use std::time::Instant;
+use itertools::max;
 use rayon::prelude::*;
 use regex::Regex;
 
@@ -62,6 +63,9 @@ struct Blueprint {
     robot_clay_cost: Storage,
     robot_obsidian_cost: Storage,
     robot_geode_cost: Storage,
+    max_needed_ore: i64,
+    max_needed_clay: i64,
+    max_needed_obsidian: i64,
 }
 
 impl Blueprint {
@@ -70,7 +74,10 @@ impl Blueprint {
             robot_ore_cost: Storage::new(ore_ore, 0, 0, 0),
             robot_clay_cost: Storage::new(clay_ore, 0, 0, 0),
             robot_obsidian_cost: Storage::new(obsidian_ore, obsidian_clay, 0, 0),
-            robot_geode_cost: Storage::new(geode_ore, 0, geode_obsidian, 0)
+            robot_geode_cost: Storage::new(geode_ore, 0, geode_obsidian, 0),
+            max_needed_ore: max([ore_ore, clay_ore, obsidian_ore, geode_ore]).unwrap(),
+            max_needed_clay: obsidian_clay,
+            max_needed_obsidian: geode_obsidian,
         }
     }
 }
@@ -96,7 +103,6 @@ fn parse(input: &str) -> HashMap<i64, Blueprint> {
 
 fn part1(input: &str) -> usize {
     let blueprints = parse(input);
-    // let blueprint = blueprints.get(&2).unwrap();
     let max_steps: i64 = 24;
 
     blueprints.par_iter()
@@ -170,7 +176,7 @@ impl <'a> State<'a> {
         blank_state.forbid_geode = can_build_geode;
         new_states.push(blank_state);
 
-        if can_build_ore && !self.forbid_ore {
+        if can_build_ore && !self.forbid_ore && self.robots.ore < self.blueprint.max_needed_ore {
             let mut ore_state = self.clone();
             ore_state.robots.ore += 1;
             ore_state.resources.subtract(&self.blueprint.robot_ore_cost);
@@ -178,7 +184,7 @@ impl <'a> State<'a> {
             ore_state.reset();
             new_states.push(ore_state);
         }
-        if can_build_clay && !self.forbid_clay {
+        if can_build_clay && !self.forbid_clay && self.robots.clay < self.blueprint.max_needed_clay {
             let mut clay_state = self.clone();
             clay_state.robots.clay += 1;
             clay_state.resources.subtract(&self.blueprint.robot_clay_cost);
@@ -186,7 +192,7 @@ impl <'a> State<'a> {
             clay_state.reset();
             new_states.push(clay_state);
         }
-        if can_build_obsidian && !self.forbid_obsidian {
+        if can_build_obsidian && !self.forbid_obsidian && self.robots.obsidian < self.blueprint.max_needed_obsidian {
             let mut obsidian_state = self.clone();
             obsidian_state.robots.obsidian += 1;
             obsidian_state.resources.subtract(&self.blueprint.robot_obsidian_cost);
