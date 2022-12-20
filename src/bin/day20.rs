@@ -28,6 +28,14 @@ fn parse(input: &str) -> Vec<(i64, bool)> {
 fn part1(input: &str) -> i64 {
     let mut numbers = parse(input);
 
+    mix(&mut numbers);
+    let zero_pos = numbers.iter().position(|x| x.0 == 0).unwrap();
+    [1000, 2000, 3000].iter()
+        .map(|x| numbers[(zero_pos + x) % numbers.len()].0)
+        .sum()
+}
+
+fn mix(numbers: &mut Vec<(i64, bool)>) {
     loop {
         for i in 0..numbers.len() {
             if numbers[i].1 == false {
@@ -44,8 +52,4 @@ fn part1(input: &str) -> i64 {
             break
         }
     }
-    let zero_pos = numbers.iter().position(|x| x.0 == 0).unwrap();
-    [1000, 2000, 3000].iter()
-        .map(|x| numbers[(zero_pos + x) % numbers.len()].0)
-        .sum()
 }
