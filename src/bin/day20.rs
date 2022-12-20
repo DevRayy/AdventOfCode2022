@@ -10,16 +10,17 @@ fn main() {
     println!("Part 1 time: {:.2?}", part1_start.elapsed());
     println!("Part 1 ans : {}", part1_ans);
 
-    // let part2_start = Instant::now();
-    // let part2_ans = part2(&input);
-    // println!("Part 2 time: {:.2?}", part2_start.elapsed());
-    // println!("Part 2 ans : {:.2?}", part2_ans);
+    let part2_start = Instant::now();
+    let part2_ans = part2(&input);
+    println!("Part 2 time: {:.2?}", part2_start.elapsed());
+    println!("Part 2 ans : {:.2?}", part2_ans);
 }
 
-fn parse(input: &str) -> Vec<i64> {
+fn parse(input: &str) -> Vec<(usize, i64)> {
     input.split("\n")
-        .map(|line| {
-            line.parse::<i64>().unwrap()
+        .enumerate()
+        .map(|(idx, line)| {
+            (idx, line.parse::<i64>().unwrap())
         })
         .collect()
 }
@@ -27,67 +28,41 @@ fn parse(input: &str) -> Vec<i64> {
 fn part1(input: &str) -> i64 {
     let mut numbers = parse(input);
 
-    let order = ordering(&numbers);
-    mix(&mut numbers, &order);
+    for i in 0..numbers.len() {
+        let pos = numbers.iter().position(|(idx, _)| *idx==i).unwrap();
 
-    let zero_pos = numbers.iter().position(|&x| x == 0).unwrap();
+        let val = numbers[pos].1;
+        numbers.remove(pos);
+        let new_pos = (pos as i64 + val).rem_euclid(numbers.len() as i64) as usize;
+        numbers.insert(new_pos, (i, val));
+    }
+
+
+    let zero_pos = numbers.iter().position(|&x| x.1 == 0).unwrap();
     [1000, 2000, 3000].iter()
-        .map(|&x| numbers[(zero_pos + x) % numbers.len()])
+        .map(|&x| numbers[(zero_pos + x) % numbers.len()].1)
         .sum()
 }
 
-// fn part2(input: &str) -> i64 {
-//     let mut numbers = parse(input);
-//     let encryption_key = 811589153;
-//     numbers = numbers.into_iter()
-//         .map(|n| (n.0 * encryption_key, n.1))
-//         .collect();
-//
-//     println!("{:?}", numbers);
-//     for _ in 0..2 {
-//         numbers = numbers.into_iter()
-//             .map(|n| (n.0, n.0 != 0))
-//             .collect();
-//         mix(&mut numbers);
-//         println!("{:?}", numbers);
-//     }
-//     let zero_pos = numbers.iter().position(|x| x.0 == 0).unwrap();
-//     [1000, 2000, 3000].iter()
-//         .map(|x| numbers[(zero_pos + x) % numbers.len()].0)
-//         .sum()
-// }
+fn part2(input: &str) -> i64 {
+    let mut numbers = parse(input);
+    let decryption_key: i64 = 811589153;
+    numbers = numbers.into_iter().map(|(idx, n)| (idx, n * decryption_key)).collect();
 
-fn ordering(numbers: &Vec<i64>) -> Vec<(usize, usize)> {
-    let mut order: Vec<(usize, usize)> = Vec::new();
-    let mut numbers = numbers.iter()
-        .map(|&n| (n, n!=0))
-        .collect::<Vec<(i64, bool)>>();
-
-    loop {
+    for _ in 0..10 {
         for i in 0..numbers.len() {
-            if numbers[i].1 == false {
-                continue
-            }
+            let pos = numbers.iter().position(|(idx, _)| *idx == i).unwrap();
 
-            let val = numbers[i].0;
-            numbers.remove(i);
-            let new_pos = (i as i64 + val).rem_euclid(numbers.len() as i64) as usize;
-            numbers.insert(new_pos, (val, false));
-            order.push((i, new_pos));
-            break;
-        }
-        if numbers.iter().filter(|x| x.1 == false).count() == numbers.len() {
-            break
+            let val = numbers[pos].1;
+            numbers.remove(pos);
+            let new_pos = (pos as i64 + val).rem_euclid(numbers.len() as i64) as usize;
+            numbers.insert(new_pos, (i, val));
         }
     }
 
-    order
-}
 
-fn mix(numbers: &mut Vec<i64>, order: &Vec<(usize, usize)>) {
-    for (i, j) in order {
-        let val = numbers[*i];
-        numbers.remove(*i);
-        numbers.insert(*j, val);
-    }
+    let zero_pos = numbers.iter().position(|&x| x.1 == 0).unwrap();
+    [1000, 2000, 3000].iter()
+        .map(|&x| numbers[(zero_pos + x) % numbers.len()].1)
+        .sum()
 }
