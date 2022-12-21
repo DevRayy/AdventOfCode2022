@@ -10,11 +10,13 @@ fn main() {
     let part1_ans = part1(&input);
     println!("Part 1 time: {:.2?}", part1_start.elapsed());
     println!("Part 1 ans : {}", part1_ans);
+    assert_eq!(part1_ans, 83056452926300);
 
     let part2_start = Instant::now();
     let part2_ans = part2(&input);
     println!("Part 2 time: {:.2?}", part2_start.elapsed());
     println!("Part 2 ans : {:.2?}", part2_ans);
+    assert_eq!(part2_ans, 3469704905529);
 }
 
 #[derive(Debug)]
@@ -41,6 +43,9 @@ impl <'a> Monke<'a> {
     }
 }
 
+const ROOT: &str = "root";
+const HUMAN: &str = "humn";
+
 fn parse(input: &str) -> HashMap<&str, Monke> {
     input.split("\n")
         .map(|line| {
@@ -48,13 +53,13 @@ fn parse(input: &str) -> HashMap<&str, Monke> {
             let id = splitted.next().unwrap();
             let mut splitted2 = splitted.next().unwrap().split(" ");
             if splitted2.clone().count() == 1 {
-                (id, Monke{number: Some(splitted2.nth(0).unwrap().parse().unwrap()), operation: None, depends_on_human: id == "humn"})
+                (id, Monke{number: Some(splitted2.nth(0).unwrap().parse().unwrap()), operation: None, depends_on_human: id == HUMAN})
             } else {
                 (id, Monke{number: None, operation: Some((
                     splitted2.next().unwrap(),
                     splitted2.next().unwrap(),
                     splitted2.next().unwrap()
-                    )), depends_on_human: id == "humn"})
+                    )), depends_on_human: id == HUMAN})
             }
         })
         .collect()
@@ -63,40 +68,26 @@ fn parse(input: &str) -> HashMap<&str, Monke> {
 fn part1(input: &str) -> i64 {
     let monkes = parse(input);
 
-    monkes.get("root").unwrap().yell(&monkes)
+    monkes.get(ROOT).unwrap().yell(&monkes)
 }
 
 fn part2(input: &str) -> i64 {
     let mut monkes = parse(input);
+    fill_human_role(&mut monkes);
 
-    let mut curr = "humn";
-    while curr != "root" {
-        curr = monkes.iter().find(|(id, m)| {
-            match m.operation {
-                None => { false }
-                Some(x) => { x.0 == curr  || x.2 == curr}
-            }
-        }).unwrap().0;
-        monkes.get_mut(curr).unwrap().depends_on_human = true;
-    }
+    let (should_equal, root) = find_human_branch(&monkes);
+    find_human_value(&monkes, should_equal, root)
+}
 
-
-
-    let root = monkes.get("root").unwrap();
-    let mut left = monkes.get(root.operation.unwrap().0).unwrap(); // depends on human
-    let mut right = monkes.get(root.operation.unwrap().2).unwrap();
-
-    if right.depends_on_human {
-        (left, right) = (right, left);
-    }
-
-    let mut should_equal = right.yell(&monkes);
-
-    let mut root = left;
-    let mut left = monkes.get(root.operation.unwrap().0).unwrap();
-    let mut right = monkes.get(root.operation.unwrap().2).unwrap();
-
+fn find_human_value(monkes: &HashMap<&str, Monke>, should_equal: i64, starting_monke: &Monke) -> i64 {
+    let mut should_equal = should_equal;
+    let mut root = starting_monke;
     loop {
+        if root.operation.is_none() {
+            return should_equal
+        }
+        let left = monkes.get(root.operation.unwrap().0).unwrap();
+        let right = monkes.get(root.operation.unwrap().2).unwrap();
         match (root.operation.unwrap().1, left.depends_on_human) {
             ("+", true) => {
                 should_equal = should_equal - right.yell(&monkes);
@@ -132,10 +123,30 @@ fn part2(input: &str) -> i64 {
             }
             (_, _) => { unreachable!() }
         }
-        if root.operation.is_none() {
-            break should_equal
-        }
-        left = monkes.get(root.operation.unwrap().0).unwrap();
-        right = monkes.get(root.operation.unwrap().2).unwrap();
+    }
+}
+
+fn find_human_branch<'a>(monkes: &'a HashMap<&str, Monke>) -> (i64, &'a Monke<'a>) {
+    let root = monkes.get("root").unwrap();
+    let mut left = monkes.get(root.operation.unwrap().0).unwrap(); // depends on human
+    let mut right = monkes.get(root.operation.unwrap().2).unwrap();
+
+    if right.depends_on_human {
+        (left, right) = (right, left);
+    }
+
+    (right.yell(&monkes), left)
+}
+
+fn fill_human_role(monkes: &mut HashMap<&str, Monke>) {
+    let mut curr = HUMAN;
+    while curr != ROOT {
+        curr = monkes.iter().find(|(_, m)| {
+            match m.operation {
+                None => { false }
+                Some(x) => { x.0 == curr || x.2 == curr }
+            }
+        }).unwrap().0;
+        monkes.get_mut(curr).unwrap().depends_on_human = true;
     }
 }
