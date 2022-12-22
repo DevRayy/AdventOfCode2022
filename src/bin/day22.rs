@@ -88,25 +88,67 @@ fn part1(input: &str) -> i64 {
         .unwrap();
 
     let mut pos = (0 as i64, min_y);
-    let mut dir = (1 as i64, 0 as i64);
+    let mut dir = (0 as i64, 1 as i64);
 
     for m in moves {
         match m {
             Move::Forward(x) => {
                 for _ in 0..x {
-                    let new_pos = (pos.0 + dir.0, pos.1 + dir.1);
-                    //if new_pos is None = wrap
-                    //if new_pos is wall = break
+                    let mut new_pos = (pos.0 + dir.0, pos.1 + dir.1);
+                    let block = map.get(&new_pos);
+
+                    if block.is_none() {
+                        match dir {
+                            (1, 0) => {
+                                new_pos = *map.iter()
+                                    .filter(|(k, _)| k.1 == pos.1)
+                                    .min_by(|a, b| a.0.0.cmp(&b.0.0))
+                                    .unwrap().0
+                            }
+                            (-1, 0) => {
+                                new_pos = *map.iter()
+                                    .filter(|(k, _)| k.1 == pos.1)
+                                    .max_by(|a, b| a.0.0.cmp(&b.0.0))
+                                    .unwrap().0
+                            }
+                            (0, 1) => {
+                                new_pos = *map.iter()
+                                    .filter(|(k, _)| k.0 == pos.0)
+                                    .min_by(|a, b| a.0.1.cmp(&b.0.1))
+                                    .unwrap().0
+                            }
+                            (0, -1) => {
+                                new_pos = *map.iter()
+                                    .filter(|(k, _)| k.0 == pos.0)
+                                    .max_by(|a, b| a.0.1.cmp(&b.0.1))
+                                    .unwrap().0
+                            }
+                            _ => {}
+                        }
+                    }
+
+                    if *map.get(&new_pos).unwrap() == Tile::Wall {
+                        break
+                    }
+                    pos = new_pos;
                 }
             }
             Move::Rotate(d) => { match d {
-                'R' => dir = (-dir.1, dir.0),
-                'L' => dir = (dir.1, -dir.0),
+                'R' => dir = (dir.1, -dir.0),
+                'L' => dir = (-dir.1, dir.0),
                 _ => unreachable!()
             }}
             Move::Nothing => unreachable!()
         }
     }
 
-    0
+    let dir_score = match dir {
+        (0, 1) => 0,
+        (1, 0) => 1,
+        (0, -1) => 2,
+        (-1, 0) => 3,
+        _ => unreachable!()
+    };
+
+    1000 * (pos.0 + 1) + 4 * (pos.1 + 1) + dir_score
 }
