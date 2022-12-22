@@ -10,13 +10,11 @@ fn main() {
     let part1_ans = part1(&input);
     println!("Part 1 time: {:.2?}", part1_start.elapsed());
     println!("Part 1 ans : {}", part1_ans);
-    assert_eq!(part1_ans, 83056452926300);
 
     let part2_start = Instant::now();
     let part2_ans = part2(&input);
     println!("Part 2 time: {:.2?}", part2_start.elapsed());
     println!("Part 2 ans : {:.2?}", part2_ans);
-    assert_eq!(part2_ans, 3469704905529);
 }
 
 #[derive(Debug)]
