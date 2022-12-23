@@ -12,10 +12,10 @@ fn main() {
     println!("Part 1 time: {:.2?}", part1_start.elapsed());
     println!("Part 1 ans : {}", part1_ans);
 
-    // let part2_start = Instant::now();
-    // let part2_ans = part2(&input);
-    // println!("Part 2 time: {:.2?}", part2_start.elapsed());
-    // println!("Part 2 ans : {:.2?}", part2_ans);
+    let part2_start = Instant::now();
+    let part2_ans = part2(&input);
+    println!("Part 2 time: {:.2?}", part2_start.elapsed());
+    println!("Part 2 ans : {:.2?}", part2_ans);
 }
 
 const DIR_N:  (i64, i64) = (-1, 0);
@@ -78,6 +78,41 @@ fn part1(input: &str) -> i64 {
     }
 
     score(&set)
+}
+
+
+fn part2(input: &str) -> usize {
+    let mut set = parse(input);
+
+    let mut i = 0;
+    loop {
+        let mut propositions: HashMap<(i64, i64), (i64, i64)> = HashMap::new();
+        for elf in &set {
+            let proposition = propose(&set, &elf, i);
+            propositions.insert(*elf, proposition);
+        }
+
+        let mut new_set: HashSet<(i64, i64)> = HashSet::new();
+        let mut should_break = true;
+        for (elf, proposition) in &propositions {
+            if propositions.iter()
+                .filter(|(_, p)| *p == proposition)
+                .count() == 1 {
+                new_set.insert(*proposition);
+                if proposition != elf {
+                    should_break = false;
+                }
+            } else {
+                new_set.insert(*elf);
+            }
+        }
+
+        set = new_set;
+        i += 1;
+        if should_break {
+            break i;
+        }
+    }
 }
 
 fn propose(set: &HashSet<(i64, i64)>, elf: &(i64, i64), it: usize) -> (i64, i64) {
