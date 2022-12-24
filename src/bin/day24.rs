@@ -13,10 +13,10 @@ fn main() {
     println!("Part 1 time: {:.2?}", part1_start.elapsed());
     println!("Part 1 ans : {}", part1_ans);
 
-    // let part2_start = Instant::now();
-    // let part2_ans = part2(&input);
-    // println!("Part 2 time: {:.2?}", part2_start.elapsed());
-    // println!("Part 2 ans : {:.2?}", part2_ans);
+    let part2_start = Instant::now();
+    let part2_ans = part2(&input);
+    println!("Part 2 time: {:.2?}", part2_start.elapsed());
+    println!("Part 2 ans : {:.2?}", part2_ans);
 }
 
 type Point = (i64, i64);
@@ -50,7 +50,6 @@ fn parse(input: &str) -> HashSet<(Point, Point)> {
         .collect()
 }
 
-
 fn part1(input: &str) -> i64 {
     let mut blizzards = parse(input);
     let start: Point = (0, 1);
@@ -67,11 +66,29 @@ fn part1(input: &str) -> i64 {
     solve(&mut blizzards, start, end)
 }
 
+fn part2(input: &str) -> i64 {
+    let mut blizzards = parse(input);
+    let start: Point = (0, 1);
+    let end_x = blizzards.iter()
+        .map(|(b, _)| b.0)
+        .max()
+        .unwrap() + 1;
+    let end_y = blizzards.iter()
+        .map(|(b, _)| b.1)
+        .max()
+        .unwrap();
+    let end: Point = (end_x, end_y);
+
+    solve(&mut blizzards, start, end) + solve(&mut blizzards, end, start) + solve(&mut blizzards, start, end)
+}
+
 fn solve(blizzards: &mut HashSet<(Point, Point)>, start: Point, end: Point) -> i64 {
     let mut positions: HashSet<Point> = HashSet::from([start]);
+    let b_start = (min(start.0, end.0), min(start.1, end.1));
+    let b_end = (max(start.0, end.0), max(start.1, end.1));
     let mut i = 0;
     loop {
-        let (b, blizzards_set) = step_blizzards(&blizzards, start, end);
+        let (b, blizzards_set) = step_blizzards(&blizzards, b_start, b_end);
         *blizzards = b;
         positions = step_positions(&blizzards_set, &positions, start, end);
         i += 1;
