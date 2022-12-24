@@ -1,3 +1,4 @@
+use std::cmp::{max, min};
 use std::collections::HashSet;
 use std::fs;
 use std::time::Instant;
@@ -63,11 +64,15 @@ fn part1(input: &str) -> i64 {
         .unwrap();
     let end: Point = (end_x, end_y);
 
+    solve(&mut blizzards, start, end)
+}
+
+fn solve(blizzards: &mut HashSet<(Point, Point)>, start: Point, end: Point) -> i64 {
     let mut positions: HashSet<Point> = HashSet::from([start]);
     let mut i = 0;
     loop {
         let (b, blizzards_set) = step_blizzards(&blizzards, start, end);
-        blizzards = b;
+        *blizzards = b;
         positions = step_positions(&blizzards_set, &positions, start, end);
         i += 1;
         if positions.contains(&end) {
@@ -84,7 +89,10 @@ fn step_positions(blizzards: &HashSet<Point>, positions: &HashSet<Point>, start:
             if p == start || p == end {
                 return true
             };
-            if p.0 <= start.0 || p.0 >= end.0 || p.1 < start.1 || p.1 > end.1 {
+            if p.0 == start.0 || p.0 == end.0 || p.0 == min(start.0, end.0) - 1 || p.0 == max(start.0, end.0) + 1{
+                return false
+            };
+            if p.1 == min(start.1, end.1) - 1 || p.1 == max(start.1, end.1) + 1 {
                 return false
             };
             return true
