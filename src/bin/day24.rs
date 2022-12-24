@@ -52,7 +52,6 @@ fn parse(input: &str) -> HashSet<(Point, Point)> {
 
 fn part1(input: &str) -> i64 {
     let mut blizzards = parse(input);
-    let mut blizzards_set: HashSet<Point> = blizzards.iter().map(|(b, _)| *b).collect();
     let start: Point = (0, 1);
     let end_x = blizzards.iter()
         .map(|(b, _)| b.0)
@@ -67,7 +66,8 @@ fn part1(input: &str) -> i64 {
     let mut positions: HashSet<Point> = HashSet::from([start]);
     let mut i = 0;
     loop {
-        (blizzards, blizzards_set) = step_blizzards(&blizzards, start, end);
+        let (b, blizzards_set) = step_blizzards(&blizzards, start, end);
+        blizzards = b;
         positions = step_positions(&blizzards_set, &positions, start, end);
         i += 1;
         if positions.contains(&end) {
